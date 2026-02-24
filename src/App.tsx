@@ -252,8 +252,6 @@ function Center({
   );
 }
 
-const SUIT_ORDER = ["spades", "hearts", "diamonds", "clubs"];
-
 function PlayerSeat({
   game,
   player,
@@ -270,6 +268,10 @@ function PlayerSeat({
   myPlayerId: string | null;
 })
 {
+  const SUIT_ORDER = ["spades", "hearts", "diamonds", "clubs"];
+
+  const MAX_PER_ROW = 8;
+
   // We define the angle in degrees for CSS
   const angle = (index / total) * 360 + 90;
 
@@ -309,6 +311,18 @@ function PlayerSeat({
   const trumpCards = sortedHand.filter(c => c.suit === game.trumpSuit);
   const nonTrumpCards = sortedHand.filter(c => c.suit !== game.trumpSuit);
 
+  function chunkCards<T>(array: T[], size: number): T[][]
+  {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += size)
+    {
+      result.push(array.slice(i, i + size));
+    }
+    return result;
+  }
+
+  const nonTrumpRows = chunkCards(nonTrumpCards, MAX_PER_ROW);
+
   return (
     <div
       className="absolute flex flex-col items-center gap-[0.5vmin]"
@@ -336,17 +350,19 @@ function PlayerSeat({
         </>
       )}
 
-      <div className="flex gap-[1vmin] mt-[1vmin] relative">
+      <div className="flex flex-row gap-[1vmin] mt-[1vmin]">
         {player.id === myPlayerId ?
           (
             <>
               {/* Trumps */}
-              {trumpCards.map(card => (
-                <PlayingCardComponent
-                  key={card.id}
-                  card={card}
-                />
-              ))}
+              <div className="flex flex-row gap-[1vmin]">
+                {trumpCards.map(card => (
+                  <PlayingCardComponent
+                    key={card.id}
+                    card={card}
+                  />
+                ))}
+              </div>
 
               {/* Divider */}
               <AnimatePresence>
@@ -364,12 +380,20 @@ function PlayerSeat({
 
 
               {/* Others */}
-              {nonTrumpCards.map(card => (
-                <PlayingCardComponent
-                  key={card.id}
-                  card={card}
-                />
-              ))}
+              <div
+                className="flex flex-col gap-[1vmin]"
+              >
+                {nonTrumpRows.map((row, rowIndex) => (
+                  <div className="flex flex-row gap-[1vmin]">
+                    {row.map(card => (
+                      <PlayingCardComponent
+                        key={card.id}
+                        card={card}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </>
           ) : (
             <div className="scale-[0.7]">

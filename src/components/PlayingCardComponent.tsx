@@ -67,7 +67,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
     <motion.div // Layout Container
       layout
       layoutId={card.id}
-      className={`w-[15vmin] h-[21vmin] transition-[scale] ${hidden || !interactable ? "pointer-events-none" : "cursor-pointer hover:scale-115"}`
+      className={`w-[15vmin] h-[21vmin] transition-[scale] ${interactable ? "cursor-pointer hover:scale-115" : ""}`
       }
       style={{ perspective: "1200px", ...style }}
       onMouseMove={handleMouseMove}

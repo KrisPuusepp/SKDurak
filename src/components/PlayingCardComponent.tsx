@@ -6,7 +6,7 @@ import type { PlayingCard } from "@/Durak";
 interface PlayingCardComponentProps
 {
   card: PlayingCard;
-  interactable?: boolean;
+  onClick?: () => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -20,7 +20,7 @@ const suitIcons: { [key: string]: any } = {
 
 const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
-export function PlayingCardComponent({ card, interactable = false, className, style }: PlayingCardComponentProps)
+export function PlayingCardComponent({ card, onClick, className, style }: PlayingCardComponentProps)
 {
   const hidden = card.rank === undefined || card.suit === undefined || card.rank === null || card.suit === null;
 
@@ -45,7 +45,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
   const smoothX = useSpring(rotateX, springConfig);
   const smoothY = useSpring(rotateY, springConfig);
 
-  const glareOpacity = useTransform(y, [-0.5, 0.5], [0.4, 0]);
+  const glareOpacity = useTransform(y, [-0.5, 0.5], [0.5, 0]);
   const smoothGlare = useSpring(glareOpacity, springConfig);
 
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>)
@@ -67,11 +67,12 @@ export function PlayingCardComponent({ card, interactable = false, className, st
     <motion.div // Layout Container
       layout
       layoutId={card.id}
-      className={`w-[15vmin] h-[21vmin] transition-[scale] ${interactable ? "cursor-pointer hover:scale-115" : ""}`
+      className={`w-[15vmin] h-[21vmin] transition-[scale] rounded-[2vmin] ${onClick !== undefined ? "-translate-y-[2vmin] cursor-pointer hover:scale-115" : ""}`
       }
       style={{ perspective: "1200px", ...style }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onPointerDown={onClick}
     >
       {/* 180 Degree Rotation */}
       <motion.div
@@ -91,7 +92,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
         >
           {/* FRONT SIDE */}
           <div
-            className={`absolute inset-0 w-full h-full rounded-[2vmin] border-[0.2vmin] ${borderColor} backdrop-blur-md p-[1.5vmin] overflow-hidden`}
+            className={`absolute inset-0 w-full h-full rounded-[2vmin] border-[0.2vmin] ${borderColor} bg-neutral-950/50 backdrop-blur-md p-[1.5vmin] overflow-hidden ${onClick ? "ring-[0.25vmin] ring-white/100" : ""}`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden"
@@ -101,7 +102,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
             <motion.div
               style={{
                 opacity: smoothGlare,
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)"
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)"
               }}
               className="absolute inset-0 pointer-events-none z-20"
             />
@@ -137,7 +138,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
             <motion.div
               style={{
                 opacity: smoothGlare,
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)"
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)"
               }}
               className="absolute inset-0 pointer-events-none z-20"
             />

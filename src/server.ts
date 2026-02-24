@@ -5,7 +5,9 @@ import
   type GameState,
   type Player,
   type PlayingCard,
+  canBeat,
   createDeck,
+  validAttackCard,
 } from "./Durak";
 import { generateUUID } from "./lib/utils";
 
@@ -57,7 +59,7 @@ function buildStateForSocket(socketId: string): GameState
     ...game,
     players: game.players.map((p) =>
     {
-      if (p.id === playerId) return p;
+      if (game.phase === "waiting" || p.id === playerId) return p;
 
       return {
         ...p,
@@ -98,6 +100,11 @@ function startGame()
 
   game.trumpSuit = game.deck[0].suit!;
 
+  // UI test code
+  //game.players[0].hand = game.deck.slice(0, 1);
+  //game.players[1].hand = game.deck.slice(1, 36);
+  //game.deck = [];
+
   // Deal 6 cards to each player
   for (let i = 0; i < 6; i++)
   {
@@ -109,7 +116,84 @@ function startGame()
     }
   }
 
+  // Choose a random starting player
+  game.attackerIndex = Math.floor(Math.random() * game.players.length);
+  game.attackerIndex = (game.defenderIndex - 1);
+  if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
+
   game.phase = "attacking";
+}
+
+// --------------------
+// Game Util
+// --------------------
+
+function giveCardsToPlayer(playerIndex: number) 
+{
+  let player = game.players.find((p) => p.index === playerIndex);
+  if (!player) return;
+
+  while (player.hand.length < 6 && game.deck.length > 0)
+  {
+    const card = game.deck.pop();
+    if (!card) continue;
+    player.hand.push(card);
+  }
+}
+
+function startNextTurn(defenderLost: boolean)
+{
+  if (game.winnerOrder.length >= game.players.length - 1) return;
+
+  // Clear table
+  game.table = [];
+
+  // Next turn
+  // Choose defender
+  if (defenderLost)
+  {
+    game.defenderIndex = (game.defenderIndex + 2) % game.players.length;
+  } else
+  {
+    game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
+  }
+  while (game.winnerOrder.includes(game.players[game.defenderIndex].id))
+  {
+    // Player has won already
+    game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
+  }
+  // Choose attacker
+  game.attackerIndex = (game.defenderIndex - 1);
+  if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
+  while (game.winnerOrder.includes(game.players[game.attackerIndex].id))
+  {
+    // Player has won already
+    game.attackerIndex--;
+    if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
+  }
+
+  game.phase = "attacking";
+}
+
+function checkForWinners()
+{
+  if (game.deck.length > 0) return;
+
+  for (const player of game.players)
+  {
+    if (player.hand.length === 0 && !game.winnerOrder.includes(player.id)) game.winnerOrder.push(player.id);
+  }
+
+  if (game.players.length - game.winnerOrder.length === 1)
+  {
+    // Game over
+    game.phase = "waiting";
+
+    // Give last player last place
+    let lastPlayer = game.players.find((p) => !game.winnerOrder.includes(p.id));
+    if (lastPlayer)
+      game.winnerOrder.push(lastPlayer.id);
+  }
 }
 
 // --------------------
@@ -131,6 +215,13 @@ io.on("connection", (socket) =>
       return;
     }
 
+    // Deny if already have 6 players
+    if (game.players.length >= 6)
+    {
+      callback({ success: false });
+      return;
+    }
+
     // Deny if game is in progress
     if (game.phase !== "waiting")
     {
@@ -141,6 +232,7 @@ io.on("connection", (socket) =>
     const player: Player = {
       id: generateUUID(),
       name,
+      index: game.players.length,
       ready: false,
       hand: [],
       connectionStatus: "connected",
@@ -154,7 +246,6 @@ io.on("connection", (socket) =>
 
     broadcastGameState();
   });
-
 
   // ---- Rejoin Existing ----
   socket.on("rejoinPlayer", (playerId: string, callback: (response: { success: boolean }) => void) =>
@@ -189,18 +280,6 @@ io.on("connection", (socket) =>
     broadcastGameState();
   });
 
-  // ---- Leave Game ----
-  socket.on("leaveGame", () =>
-  {
-    const playerId = socketToPlayer.get(socket.id);
-    if (!playerId) return;
-
-    game.players = game.players.filter((p) => p.id !== playerId);
-    socketToPlayer.delete(socket.id);
-
-    broadcastGameState();
-  });
-
   // ---- Toggle Ready ----
   socket.on("toggleReady", () =>
   {
@@ -223,6 +302,173 @@ io.on("connection", (socket) =>
     {
       startGame();
     }
+
+    broadcastGameState();
+  });
+
+  // ---- Play Card ----
+  socket.on("playCard", (cardID: string) =>
+  {
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) return;
+
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const card = player.hand.find((c) => c.id === cardID);
+    if (!card) return;
+
+    const playerIndex = game.players.findIndex((p) => p.id === playerId);
+    if (playerIndex === -1) return;
+
+    if (game.defenderIndex === playerIndex)
+    {
+      // Defending
+
+      if (game.phase != "defending") return;
+      let attackerCard = game.table[game.table.length - 1].attackCard;
+      if (!attackerCard) return;
+
+      if (canBeat(card, attackerCard, game.trumpSuit))
+      {
+        // Remove card from defender hand
+        player.hand = player.hand.filter((c) => c.id !== cardID);
+
+        // Add to table
+        game.table[game.table.length - 1].defenseCard = card;
+
+        // Next phase
+        if (game.table.length === 6 || player.hand.length === 0)
+        {
+          // No more cards may be played
+          game.phase = "animation";
+          setTimeout(() =>
+          {
+            giveCardsToPlayer(game.attackerIndex);
+            giveCardsToPlayer(game.defenderIndex);
+            checkForWinners();
+            startNextTurn(false);
+            broadcastGameState();
+          }, 2000);
+        } else
+        {
+          // Attacks continue
+          game.phase = "attacking";
+        }
+
+        console.log("Player " + player.name + " defends");
+      }
+    } else if (game.attackerIndex === playerIndex)
+    {
+      // Attacking
+
+      if (game.phase != "attacking") return;
+
+      const defender = game.players[game.defenderIndex];
+
+      // Cannot attack if defender has no cards
+      if (defender.hand.length === 0) return;
+
+      if (!validAttackCard(card, game)) return;
+
+      // Remove card from attacker hand
+      player.hand = player.hand.filter((c) => c.id !== cardID);
+
+      // Add to table
+      game.table.push({ attackCard: card });
+
+      // Next phase
+      game.phase = "defending";
+
+      console.log("Player " + player.name + " attacks");
+    }
+
+    checkForWinners();
+
+    broadcastGameState();
+  });
+
+  // ---- Pass Attack ----
+  socket.on("passAttack", () =>
+  {
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) return;
+
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const playerIndex = game.players.findIndex((p) => p.id === playerId);
+    if (playerIndex === -1) return;
+
+    if (game.phase != "attacking") return;
+    if (player.hand.length == 0) return;
+    if (game.table.length == 0) return; // Haven't attacked yet
+
+    // Give cards
+    giveCardsToPlayer(game.attackerIndex);
+
+    // Next turn
+    if (game.attackerIndex == game.defenderIndex - 1 && game.players.length - game.winnerOrder.length > 2)
+    {
+      // Attacker 2 starts
+      game.attackerIndex = (game.defenderIndex + 1) % game.players.length;
+      while (game.winnerOrder.includes(game.players[game.attackerIndex].id))
+      {
+        // Player has won already
+        game.attackerIndex = (game.attackerIndex + 1) % game.players.length;
+      }
+    } else
+    {
+      // Attacks and defense done
+      giveCardsToPlayer(game.defenderIndex);
+      startNextTurn(false);
+    }
+
+    broadcastGameState();
+  });
+
+  // ---- Forfeit Defense ----
+  socket.on("forfeitDefense", () =>
+  {
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) return;
+
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const playerIndex = game.players.findIndex((p) => p.id === playerId);
+    if (playerIndex === -1) return;
+
+    if (game.phase != "defending") return;
+    if (game.defenderIndex === playerIndex)
+    {
+      // Take all cards on the table
+      for (const pair of game.table)
+      {
+        player.hand.push(pair.attackCard);
+        if (pair.defenseCard) player.hand.push(pair.defenseCard);
+      }
+
+      // Clear table
+      game.table = [];
+
+      // Give cards
+      giveCardsToPlayer(game.attackerIndex);
+
+      startNextTurn(true);
+    }
+
+    broadcastGameState();
+  });
+
+  // ---- Leave Game ----
+  socket.on("leaveGame", () =>
+  {
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) return;
+
+    game.players = game.players.filter((p) => p.id !== playerId);
+    socketToPlayer.delete(socket.id);
 
     broadcastGameState();
   });

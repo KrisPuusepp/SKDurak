@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n CLIENT,SERVER -c cyan,yellow \"vite\" \"tsx --watch src/server.ts\"",
-    "host": "concurrently -k -n CLIENT,SERVER -c cyan,yellow \"vite --host\" \"tsx --watch src/server.ts\"",
+    "host": "concurrently -k -n CLIENT,SERVER -c cyan,yellow \"vite --host --port 3001\" \"tsx --watch src/server.ts\"",
     "build": "tsc -b && vite build && node esbuild.server.cjs",
     "lint": "eslint .",
     "preview": "vite preview"

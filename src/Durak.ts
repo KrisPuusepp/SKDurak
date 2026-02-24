@@ -44,6 +44,7 @@ export interface Player
 {
   id: string;               // Socket ID or unique user ID
   name: string;
+  index: number;
   ready: boolean;
   hand: PlayingCard[];
   connectionStatus: "connected" | "disconnected";
@@ -56,8 +57,7 @@ export type GamePhase =
   | "waiting"
   | "attacking"
   | "defending"
-  | "cleanup"
-  | "finished";
+  | "animation" /* A special phase used for animations. No special interactions should take place during this phase. */;
 
 export interface GameState
 {
@@ -104,8 +104,8 @@ export function createDeck(): PlayingCard[]
 }
 
 export function canBeat(
-  attackCard: PlayingCard,
   defenseCard: PlayingCard,
+  attackCard: PlayingCard,
   trumpSuit: Suit
 ): boolean
 {
@@ -135,3 +135,31 @@ export function canBeat(
   return false;
 }
 
+export function validAttackCard(
+  card: PlayingCard,
+  game: GameState
+): boolean
+{
+  if (game.table.length == 0)
+    return true;
+
+  // If table not empty, rank must match an existing rank on table
+
+  const ranksOnTable = new Set<number>();
+
+  for (const pair of game.table)
+  {
+    if (pair.attackCard.rank !== null)
+      ranksOnTable.add(pair.attackCard.rank);
+
+    if (pair.defenseCard && pair.defenseCard.rank !== null)
+      ranksOnTable.add(pair.defenseCard.rank);
+  }
+
+  if (!ranksOnTable.has(card.rank!))
+  {
+    return false; // Invalid rank for attack
+  }
+
+  return true;
+}

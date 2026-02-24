@@ -94,7 +94,9 @@ function startGame()
   for (const player of game.players)
   {
     player.ready = false;
+    player.hand = [];
   }
+  game.winnerOrder = [];
 
   game.deck = createDeck();
 

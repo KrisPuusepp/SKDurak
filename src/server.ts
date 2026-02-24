@@ -13,7 +13,8 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
+    methods: ["GET", "POST"]
   },
 });
 
@@ -28,7 +29,6 @@ let game: GameState = {
   table: [],
   deck: [],
   trumpSuit: "hearts",
-  deckTrumpCard: null,
   phase: "waiting",
   winnerOrder: [],
 };
@@ -51,7 +51,7 @@ function maskCard(card: PlayingCard): PlayingCard
 
 function buildStateForSocket(socketId: string): GameState
 {
-  const playerId = socketToPlayer.get(socketId);
+  const playerId = socketToPlayer.get(socketId) || "";
 
   return {
     ...game,
@@ -64,16 +64,21 @@ function buildStateForSocket(socketId: string): GameState
         hand: p.hand.map((card) => maskCard(card)),
       };
     }),
+    deck: game.deck.map((card) =>
+    {
+      if (card !== game.deck[0])
+      {
+        return maskCard(card);
+      }
+      return card;
+    }),
   };
 }
 
 function broadcastGameState()
 {
-  for (const [socketId] of socketToPlayer.entries())
+  for (const [socketId, socket] of io.sockets.sockets)
   {
-    const socket = io.sockets.sockets.get(socketId);
-    if (!socket) continue;
-
     socket.emit("gameState", buildStateForSocket(socketId));
   }
 }
@@ -84,17 +89,21 @@ function broadcastGameState()
 
 function startGame()
 {
-  const deck = createDeck();
+  for (const player of game.players)
+  {
+    player.ready = false;
+  }
 
-  game.deckTrumpCard = deck[deck.length - 1];
-  game.trumpSuit = game.deckTrumpCard.suit!;
+  game.deck = createDeck();
 
-  // Deal 6 cards
+  game.trumpSuit = game.deck[game.deck.length - 1].suit!;
+
+  // Deal 6 cards to each player
   for (let i = 0; i < 6; i++)
   {
     for (const player of game.players)
     {
-      const card = deck.pop();
+      const card = game.deck.pop();
       if (!card) continue;
       player.hand.push(card);
     }
@@ -113,8 +122,22 @@ io.on("connection", (socket) =>
   socket.emit("gameState", buildStateForSocket(socket.id));
 
   // ---- Create & Join ----
-  socket.on("joinNewPlayer", (name: string) =>
+  socket.on("joinNewPlayer", (name: string, callback: (response: { success: boolean; playerId?: string }) => void) =>
   {
+    // Deny if already a player
+    if (socketToPlayer.has(socket.id))
+    {
+      callback({ success: false });
+      return;
+    }
+
+    // Deny if game is in progress
+    if (game.phase !== "waiting")
+    {
+      callback({ success: false });
+      return;
+    }
+
     const player: Player = {
       id: generateUUID(),
       name,
@@ -127,18 +150,41 @@ io.on("connection", (socket) =>
     game.players.push(player);
     socketToPlayer.set(socket.id, player.id);
 
+    callback({ success: true, playerId: player.id });
+
     broadcastGameState();
   });
 
+
   // ---- Rejoin Existing ----
-  socket.on("rejoinPlayer", (playerId: string) =>
+  socket.on("rejoinPlayer", (playerId: string, callback: (response: { success: boolean }) => void) =>
   {
+    // Deny if already a player
+    if (socketToPlayer.has(socket.id))
+    {
+      callback({ success: false });
+      return;
+    }
+
     const player = game.players.find((p) => p.id === playerId);
-    if (!player) return;
-    if (player.connectionStatus === "connected") return;
+    if (!player)
+    {
+      // Player does not exist
+      callback({ success: false });
+      return;
+    }
+
+    if (player.connectionStatus === "connected")
+    {
+      // Player is already connected
+      callback({ success: false });
+      return;
+    }
 
     player.connectionStatus = "connected";
     socketToPlayer.set(socket.id, player.id);
+
+    callback({ success: true });
 
     broadcastGameState();
   });
@@ -165,7 +211,9 @@ io.on("connection", (socket) =>
     if (!player) return;
 
     // add ready dynamically
-    player.ready = !(player as any).ready;
+    player.ready = !player.ready;
+
+    console.log("Player " + player.name + " is " + (player.ready ? "ready" : "not ready"));
 
     const allReady =
       game.players.length > 1 &&
@@ -191,6 +239,7 @@ io.on("connection", (socket) =>
     if (player)
     {
       player.connectionStatus = "disconnected";
+      player.ready = false;
     }
 
     socketToPlayer.delete(socket.id);

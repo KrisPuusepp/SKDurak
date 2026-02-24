@@ -1,14 +1,14 @@
 import React from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Heart as HeartIcon, Diamond as DiamondIcon, Club as ClubIcon, Spade as SpadeIcon, CircleHelp as QuestionMark, Rabbit } from "lucide-react";
-import type { Rank, Suit } from "@/Durak";
+import type { PlayingCard } from "@/Durak";
 
 interface PlayingCardComponentProps
 {
-  rank?: Rank | null;
-  suit?: Suit | null;
+  card: PlayingCard;
   interactable?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const suitIcons: { [key: string]: any } = {
@@ -20,19 +20,19 @@ const suitIcons: { [key: string]: any } = {
 
 const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
-export function PlayingCardComponent({ rank, suit, interactable = false, className }: PlayingCardComponentProps)
+export function PlayingCardComponent({ card, interactable = false, className, style }: PlayingCardComponentProps)
 {
-  const hidden = rank === undefined || suit === undefined || rank === null || suit === null;
+  const hidden = card.rank === undefined || card.suit === undefined || card.rank === null || card.suit === null;
 
-  const SuitSVG = (suit && suitIcons[suit]) || QuestionMark;
-  const isRedSuit = suit === "hearts" || suit === "diamonds";
+  const SuitSVG = (card.suit && suitIcons[card.suit]) || QuestionMark;
+  const isRedSuit = card.suit === "hearts" || card.suit === "diamonds";
 
-  const displayRank = (rank && RANK_LABELS[rank]) || "?";
+  const displayRank = (card.rank && RANK_LABELS[card.rank]) || "?";
   const accentColor = isRedSuit ? "text-red-500" : "text-white";
   const borderColor = isRedSuit ? "border-red-500/50" : "border-white/40";
-  const glowStyle = isRedSuit
+  const glowStyle = hidden ? "" : (isRedSuit
     ? "shadow-[0_0_25px_rgba(239,68,68,0.2)]"
-    : "shadow-[0_0_25px_rgba(255,255,255,0.15)]";
+    : "shadow-[0_0_25px_rgba(255,255,255,0.15)]");
 
   // --- Tilt Logic ---
   const x = useMotionValue(0);
@@ -65,9 +65,12 @@ export function PlayingCardComponent({ rank, suit, interactable = false, classNa
   }
 
   return (
-    <div
-      className={`w-32 h-48 ${hidden || !interactable ? "pointer-events-none" : "cursor-pointer"}`}
-      style={{ perspective: "1200px" }}
+    <motion.div // Layout Container
+      layout
+      layoutId={card.id}
+      className={`w-32 h-48 ${hidden || !interactable ? "pointer-events-none" : "cursor-pointer"}`
+      }
+      style={{ perspective: "1200px", ...style }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -85,11 +88,11 @@ export function PlayingCardComponent({ rank, suit, interactable = false, classNa
             rotateY: smoothY, // This gets overridden by the animate prop for the flip, or we can combine them:
             transformStyle: "preserve-3d",
           }}
-          className={`relative w-full h-full pointer-events-none rounded-xl transition-shadow duration-500 ${glowStyle} ${className}`}
+          className={`relative w-full h-full pointer-events-none rounded-xl ${glowStyle} ${className}`}
         >
           {/* FRONT SIDE */}
           <div
-            className={`absolute inset-0 w-full h-full rounded-xl border ${borderColor} bg-gray-900/90 backdrop-blur-md p-3 overflow-hidden`}
+            className={`absolute inset-0 w-full h-full rounded-xl border ${borderColor} backdrop-blur-md p-3 overflow-hidden`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden"
@@ -119,19 +122,27 @@ export function PlayingCardComponent({ rank, suit, interactable = false, classNa
                 <SuitSVG className="w-5 h-5 mt-0.5" />
               </div>
             </div>
-          </div>
+          </div >
 
           {/* BACK SIDE (Hidden) */}
           <div
-            className="absolute inset-0 w-full h-full rounded-xl border border-blue-500/30 bg-slate-950 p-2 overflow-hidden"
+            className="absolute inset-0 w-full h-full rounded-xl border border-neutral-800/80 bg-neutral-900/50 p-2 overflow-hidden"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
               transform: "rotateY(180deg)"
             }}
           >
+            {/* Glare Effect */}
+            <motion.div
+              style={{
+                opacity: smoothGlare,
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)"
+              }}
+              className="absolute inset-0 pointer-events-none z-20"
+            />
             {/* Decorative Back Pattern */}
-            <div className="w-full h-full rounded-lg border border-blue-500/20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 to-transparent flex items-center justify-center relative overflow-hidden">
+            <div className="w-full h-full rounded-lg border border-neutral-800/20 flex items-center backdrop-blur-md justify-center relative overflow-hidden" >
               <div
                 className="absolute inset-0 opacity-5"
                 style={{
@@ -139,11 +150,11 @@ export function PlayingCardComponent({ rank, suit, interactable = false, classNa
                   backgroundSize: "20px 20px"
                 }}
               />
-              <Rabbit className="w-12 h-12 text-blue-900" />
-            </div>
-          </div>
-        </motion.div>
+              <Rabbit className="w-12 h-12 text-neutral-600" />
+            </div >
+          </div >
+        </motion.div >
       </motion.div >
-    </div>
+    </motion.div >
   );
 }

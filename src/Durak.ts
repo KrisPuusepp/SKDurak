@@ -69,9 +69,7 @@ export interface GameState
   table: TablePair[];
 
   trumpSuit: Suit;
-
   deck: PlayingCard[];
-  deckTrumpCard: PlayingCard | null;
 
   phase: GamePhase;
 

@@ -96,7 +96,7 @@ function startGame()
 
   game.deck = createDeck();
 
-  game.trumpSuit = game.deck[game.deck.length - 1].suit!;
+  game.trumpSuit = game.deck[0].suit!;
 
   // Deal 6 cards to each player
   for (let i = 0; i < 6; i++)

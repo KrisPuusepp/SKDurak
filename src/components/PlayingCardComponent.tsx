@@ -31,8 +31,8 @@ export function PlayingCardComponent({ card, interactable = false, className, st
   const accentColor = isRedSuit ? "text-red-500" : "text-white";
   const borderColor = isRedSuit ? "border-red-500/50" : "border-white/40";
   const glowStyle = hidden ? "" : (isRedSuit
-    ? "shadow-[0_0_25px_rgba(239,68,68,0.2)]"
-    : "shadow-[0_0_25px_rgba(255,255,255,0.15)]");
+    ? "shadow-[0_0_3vmin_rgba(239,68,68,0.2)]"
+    : "shadow-[0_0_3vmin_rgba(255,255,255,0.15)]");
 
   // --- Tilt Logic ---
   const x = useMotionValue(0);
@@ -51,7 +51,6 @@ export function PlayingCardComponent({ card, interactable = false, className, st
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>)
   {
     if (hidden) return;
-    if (!interactable) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     x.set((event.clientX - rect.left) / rect.width - 0.5);
@@ -68,7 +67,7 @@ export function PlayingCardComponent({ card, interactable = false, className, st
     <motion.div // Layout Container
       layout
       layoutId={card.id}
-      className={`w-32 h-48 ${hidden || !interactable ? "pointer-events-none" : "cursor-pointer"}`
+      className={`w-[15vmin] h-[21vmin] transition-[scale] ${hidden || !interactable ? "pointer-events-none" : "cursor-pointer hover:scale-115"}`
       }
       style={{ perspective: "1200px", ...style }}
       onMouseMove={handleMouseMove}
@@ -88,11 +87,11 @@ export function PlayingCardComponent({ card, interactable = false, className, st
             rotateY: smoothY, // This gets overridden by the animate prop for the flip, or we can combine them:
             transformStyle: "preserve-3d",
           }}
-          className={`relative w-full h-full pointer-events-none rounded-xl ${glowStyle} ${className}`}
+          className={`relative w-full h-full pointer-events-none rounded-[2vmin] transition-shadow duration-500 ${glowStyle} ${className}`}
         >
           {/* FRONT SIDE */}
           <div
-            className={`absolute inset-0 w-full h-full rounded-xl border ${borderColor} backdrop-blur-md p-3 overflow-hidden`}
+            className={`absolute inset-0 w-full h-full rounded-[2vmin] border-[0.2vmin] ${borderColor} backdrop-blur-md p-[1.5vmin] overflow-hidden`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden"
@@ -102,31 +101,32 @@ export function PlayingCardComponent({ card, interactable = false, className, st
             <motion.div
               style={{
                 opacity: smoothGlare,
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)"
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)"
               }}
               className="absolute inset-0 pointer-events-none z-20"
             />
 
+            {/* Suits and Ranks */}
             <div className="relative w-full h-full" style={{ transform: "translateZ(20px)" }}>
               <div className={`absolute top-0 left-0 flex flex-col items-center ${accentColor}`}>
-                <span className="text-lg font-bold leading-none">{displayRank}</span>
-                <SuitSVG className="w-5 h-5 mt-0.5" />
+                <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
+                <SuitSVG className="w-[2vmin] h-[2vmin] mt-0.5" />
               </div>
 
               <div className="absolute inset-0 flex justify-center items-center" style={{ transform: "translateZ(40px)" }}>
-                <SuitSVG className={`w-14 h-14 ${accentColor} filter drop-shadow-[0_0_15px_currentColor] opacity-90`} />
+                <SuitSVG className={`w-[6vmin] h-[6vmin] ${accentColor} filter drop-shadow-[0_0_1.5vmin_currentColor] opacity-90`} />
               </div>
 
               <div className={`absolute bottom-0 right-0 flex flex-col items-center transform rotate-180 ${accentColor}`}>
-                <span className="text-lg font-bold leading-none">{displayRank}</span>
-                <SuitSVG className="w-5 h-5 mt-0.5" />
+                <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
+                <SuitSVG className="w-[2vmin] h-[2vmin] mt-0.5" />
               </div>
             </div>
           </div >
 
           {/* BACK SIDE (Hidden) */}
           <div
-            className="absolute inset-0 w-full h-full rounded-xl border border-neutral-800/80 bg-neutral-900/50 p-2 overflow-hidden"
+            className="absolute inset-0 w-full h-full rounded-[2vmin] border-[0.2vmin] border-neutral-600 bg-neutral-900 p-[1.5vmin] overflow-hidden"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -137,20 +137,14 @@ export function PlayingCardComponent({ card, interactable = false, className, st
             <motion.div
               style={{
                 opacity: smoothGlare,
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)"
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)"
               }}
               className="absolute inset-0 pointer-events-none z-20"
             />
-            {/* Decorative Back Pattern */}
-            <div className="w-full h-full rounded-lg border border-neutral-800/20 flex items-center backdrop-blur-md justify-center relative overflow-hidden" >
-              <div
-                className="absolute inset-0 opacity-5"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M10 3l7 7-7 7-7-7z' fill='%233b82f6'/%3E%3C/svg%3E")`,
-                  backgroundSize: "20px 20px"
-                }}
-              />
-              <Rabbit className="w-12 h-12 text-neutral-600" />
+
+            {/* Back Contents */}
+            <div className="w-full h-full rounded-lg flex items-center justify-center relative overflow-hidden" >
+              <Rabbit className="w-[5vmin] h-[5vmin] text-neutral-600" />
             </div >
           </div >
         </motion.div >

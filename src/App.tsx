@@ -1,12 +1,96 @@
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { PlayingCardComponent } from "./components/PlayingCardComponent";
+import { lucideSuitIcons, PlayingCardComponent, svgSuitIcons } from "./components/PlayingCardComponent";
 import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard } from "./Durak";
-import { Check, Star } from "lucide-react";
+import { Check, Settings, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Label } from "@/components/ui/label";
+import
+{
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { SettingRow } from "@/components/SettingRow";
+import { Checkbox } from "./components/ui/checkbox";
+
+const DEFAULT_SETTINGS: UserSettings = {
+  backgroundTheme: "dark",
+  cardTheme: "dark",
+  suitShape: "lucide",
+  suitFill: "hollow",
+  cardGlow: true,
+};
+
+export interface UserSettings
+{
+  backgroundTheme: "dark" | "light";
+  cardTheme: "dark" | "classic";
+  suitShape: "lucide" | "classic";
+  suitFill: "hollow" | "filled";
+  cardGlow: boolean;
+}
+
+export const SettingsContext = createContext<{
+  settings: UserSettings;
+  setSettings: Dispatch<SetStateAction<UserSettings>>;
+} | null>(null);
+
+const SETTING_OPTIONS = {
+  backgroundTheme: [
+    { value: "dark", label: <div className="flex items-center gap-2"> Dark</div> },
+    { value: "light", label: <div className="flex items-center gap-2"> Light</div> },
+  ],
+  cardTheme: [
+    { value: "dark", label: "Dark" },
+    { value: "classic", label: "Classic" },
+  ],
+  suitShape: [
+    {
+      value: "lucide", label: <div className="flex items-center gap-2">
+        <p>Lucide</p>
+        {Object.entries(lucideSuitIcons).map(([name, Icon]) => (
+          <div className="flex items-center gap-2 fill-transparent">
+            <Icon className="w-4 h-4" />
+          </div>
+        ))}
+      </div>
+    },
+    {
+      value: "classic", label: <div className="flex items-center gap-2">
+        <p>Classic</p>
+        {Object.entries(svgSuitIcons).map(([name, svg]) => (
+          <div className="flex items-center gap-2 fill-transparent">
+            {svg}
+          </div>
+        ))}
+      </div>
+    },
+  ],
+  suitFill: [
+    {
+      value: "hollow", label: <div className="flex items-center gap-2">
+        <p>Hollow</p>
+        <div className="flex items-center gap-2 fill-transparent">
+          {svgSuitIcons["hearts"]}
+        </div>
+      </div>
+    },
+    {
+      value: "filled", label: <div className="flex items-center gap-2">
+        <p>Filled</p>
+        <div className="flex items-center gap-2 fill-current">
+          {svgSuitIcons["hearts"]}
+        </div>
+      </div>
+    },
+  ],
+};
 
 let socket: Socket;
 
@@ -15,6 +99,33 @@ export default function App()
   const [game, setGame] = useState<GameState | null>(null);
   const [name, setName] = useState("");
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<UserSettings>(() =>
+  {
+    try
+    {
+      const saved = localStorage.getItem("SKDurak-user-settings");
+      return saved
+        ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) }
+        : DEFAULT_SETTINGS;
+    } catch
+    {
+      return DEFAULT_SETTINGS;
+    }
+  });
+  useEffect(() =>
+  {
+    localStorage.setItem("SKDurak-user-settings", JSON.stringify(settings));
+  }, [settings]);
+  useEffect(() =>
+  {
+    const root = window.document.documentElement;
+
+    // Remove existing theme classes
+    root.classList.remove("light", "dark");
+
+    // Add the current theme class
+    root.classList.add(settings.backgroundTheme);
+  }, [settings.backgroundTheme]);
 
   useEffect(() =>
   {
@@ -93,72 +204,134 @@ export default function App()
   }
 
   return (
-    <div className="h-screen w-screen bg-neutral-950 text-white relative overflow-hidden">
-      {/* Table Container */}
-      <div className="absolute inset-0 flex items-center justify-center">
+    <div className="h-screen w-screen relative overflow-hidden">
+      <SettingsContext.Provider value={{ settings, setSettings }}>
+        {/* Table Container */}
+        <div className="absolute inset-0 flex items-center justify-center">
 
-        {/* 3D Wrapper: This holds both the top and the bottom layer */}
-        <div className="relative w-[90vmin] h-[90vmin] flex items-center justify-center">
+          {/* 3D Wrapper: This holds both the top and the bottom layer */}
+          <div className="relative w-[90vmin] h-[90vmin] flex items-center justify-center">
 
-          {/* Bottom Layer (Shadow/Reflection) */}
-          <div className="absolute w-full h-full rounded-full perspective-near rotate-x-320 bg-white/3 border-[0.35vmin] border-white/3 translate-y-[3vmin]">
-            {/* This copy is shifted down (translate-y-8) and made transparent (bg-white/5) */}
+            {/* Bottom Layer (Shadow/Reflection) */}
+            <div className="absolute w-full h-full rounded-full perspective-near rotate-x-320 bg-[#eeeeee] dark:bg-[#151515] border-[0.35vmin] border-[#cccccc] dark:border-[#333333] translate-y-[3vmin]">
+              {/* This copy is shifted down (translate-y-8) and made transparent (bg-white/5) */}
+            </div>
+
+            {/* Top Layer (Main Table Surface) */}
+            <div className="relative w-full h-full rounded-full perspective-near rotate-x-320 bg-[#eeeeee] dark:bg-[#111111] shadow-2xl shadow-[#22222255] inset-shadow-sm inset-shadow-[#888888] border-[0.35vmin] border-[#999999] dark:border-[#333333]">
+              {/* Main Surface */}
+            </div>
+
+            {/* Center Content: Absolutely positioned relative to the center of the table */}
+            <div className="absolute z-10">
+              <Center
+                game={game}
+                myPlayerId={myPlayerId}
+                name={name}
+                setName={setName}
+                join={joinNewPlayer}
+              />
+            </div>
           </div>
 
-          {/* Top Layer (Main Table Surface) */}
-          <div className="relative w-full h-full rounded-full perspective-near rotate-x-320 bg-[#111111] shadow-2xl shadow-[#222222] inset-shadow-sm inset-shadow-[#888888] border-[0.35vmin] border-[#333333]">
-            {/* Main Surface */}
-          </div>
+          <div className="absolute -translate-y-[6vmin]">
+            {/* Players: Wrapped around the table */}
+            {(() =>
+            {
+              if (!myPlayerId) return game.players;
 
-          {/* Center Content: Absolutely positioned relative to the center of the table */}
-          <div className="absolute z-10">
-            <Center
-              game={game}
-              myPlayerId={myPlayerId}
-              name={name}
-              setName={setName}
-              join={joinNewPlayer}
-            />
+              const myIndex = game.players.findIndex(p => p.id === myPlayerId);
+              if (myIndex === -1) return game.players;
+
+              return [
+                ...game.players.slice(myIndex),
+                ...game.players.slice(0, myIndex),
+              ];
+            })().map((player, rotationIndex) => (
+              <PlayerSeat
+                key={player.id}
+                game={game}
+                player={player}
+                rotationIndex={rotationIndex}
+                rejoinPlayer={rejoinPlayer}
+                myPlayerId={myPlayerId}
+              />
+            ))}
           </div>
         </div>
 
-        <div className="absolute -translate-y-[8vmin]">
-          {/* Players: Wrapped around the table */}
-          {(() =>
-          {
-            if (!myPlayerId) return game.players;
+        {/* Top Left Settings Menu */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="capitalize absolute top-4 left-4" size="icon">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left">
+            <SheetHeader>
+              <SheetTitle>Settings</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-1 w-50% h-100%">
+              <SettingRow
+                label="Background Theme"
+                id="background-theme"
+                value={settings.backgroundTheme}
+                options={SETTING_OPTIONS.backgroundTheme}
+                onChange={(val) => setSettings({ ...settings, backgroundTheme: val as any })}
+              />
 
-            const myIndex = game.players.findIndex(p => p.id === myPlayerId);
-            if (myIndex === -1) return game.players;
+              <SettingRow
+                label="Card Theme"
+                id="card-theme"
+                value={settings.cardTheme}
+                options={SETTING_OPTIONS.cardTheme}
+                onChange={(val) => setSettings({ ...settings, cardTheme: val as any })}
+              />
 
-            return [
-              ...game.players.slice(myIndex),
-              ...game.players.slice(0, myIndex),
-            ];
-          })().map((player, rotationIndex) => (
-            <PlayerSeat
-              key={player.id}
-              game={game}
-              player={player}
-              rotationIndex={rotationIndex}
-              rejoinPlayer={rejoinPlayer}
-              myPlayerId={myPlayerId}
-            />
-          ))}
-        </div>
-      </div>
+              <SettingRow
+                label="Suit Shape"
+                id="suit-shape"
+                value={settings.suitShape}
+                options={SETTING_OPTIONS.suitShape}
+                onChange={(val) => setSettings({ ...settings, suitShape: val as any })}
+              />
 
-      {/* Bottom Controls */}
-      {game.phase === "waiting" && myPlayerId != null && (
-        <div className={`absolute bottom-6 left-0 right-0 flex justify-center`}>
-          <Button
-            onClick={toggleReady}
-            className={`${game.players.find((p) => p.id === myPlayerId)?.ready ? "bg-green-300 hover:bg-green-400" : ""}`}
-          >
-            Ready {game.players.find((p) => p.id === myPlayerId)?.ready && <Check className="ml-2 scale-150" />}
-          </Button>
-        </div>
-      )}
+              <SettingRow
+                label="Suit Fill"
+                id="suit-fill"
+                value={settings.suitFill}
+                options={SETTING_OPTIONS.suitFill}
+                onChange={(val) => setSettings({ ...settings, suitFill: val as any })}
+              />
+
+              <div className="flex items-center justify-end w-full gap-4 py-2">
+                <Label htmlFor="card-glow" className="whitespace-nowrap font-medium">
+                  Card Glow
+                </Label>
+                <div className="w-full max-w-[50%]">
+                  <Checkbox
+                    id="card-glow"
+                    checked={settings.cardGlow}
+                    onCheckedChange={(val) => setSettings({ ...settings, cardGlow: val as any })}
+                  />
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Bottom Controls */}
+        {game.phase === "waiting" && myPlayerId != null && (
+          <div className={`absolute bottom-6 left-0 right-0 flex justify-center`}>
+            <Button
+              onClick={toggleReady}
+              className={`${game.players.find((p) => p.id === myPlayerId)?.ready ? "bg-green-300 hover:bg-green-400" : ""}`}
+            >
+              Ready {game.players.find((p) => p.id === myPlayerId)?.ready && <Check className="ml-2 scale-150" />}
+            </Button>
+          </div>
+        )}
+      </SettingsContext.Provider>
     </div>
   );
 }
@@ -182,11 +355,12 @@ function Center({
       {/* Center "Join Game" Popup*/}
       {game.phase === "waiting" && myPlayerId === null && (
         <div className="flex flex-col items-center justify-center gap-4 z-10">
-          <Card className="p-6 w-72 space-y-4">
+          <Card className="p-6 w-72">
             <Input
               placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              maxLength={30}
             />
             <Button onClick={join} className="w-full">
               Join Game
@@ -195,11 +369,11 @@ function Center({
         </div>
       )}
 
-      {game.players.findIndex((p) => p.id === myPlayerId) === game.attackerIndex && game.phase === "attacking" && game.table.length > 0 ? (
+      {game.players.findIndex((p) => p.id === myPlayerId) === game.attackerQueue[0] && game.phase === "attacking" && game.table.length > 0 ? (
         <Button
           variant="destructive"
           onClick={() => socket.emit("passAttack")}
-          className="absolute left-[24vmin] -top-[5vmin] w-[14vmin] h-[14vmin] z-100 text-2xl"
+          className="absolute left-[12.5vmin] -top-[4.8vmin] w-[16vmin] h-[11.25vmin] z-100 text-[4vmin]"
         >
           Pass
         </Button>
@@ -207,8 +381,8 @@ function Center({
 
       {/* Deck Container */}
       {game.deck.length > 0 && (
-        <div className="absolute left-[25vmin] bottom-[15vmin] flex flex-row items-center gap-[0.5vmin]">
-          <div className="absolute text-[5vmin] text-neutral-300 text-shadow-md text-shadow-neutral-500 rounded-full z-10 -left-[14vmin] top-[11vmin] text-right w-[10vmin]">
+        <div className="absolute left-[15vmin] bottom-[15vmin] flex flex-row items-center gap-[0.5vmin]">
+          <div className="absolute text-[5vmin] text-shadow-md rounded-full z-10 -left-[14vmin] top-[11vmin] text-right w-[10vmin]">
             {game.deck.length}x
           </div>
 
@@ -219,7 +393,6 @@ function Center({
 
               return (
                 <div
-                  key={card.id}
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down
@@ -232,7 +405,7 @@ function Center({
                     key={card.id}
                     card={card}
                     // Only the first card gets the 90-degree rotation
-                    className={isFirst ? "" : "-rotate-90 top-[10.5vmin] -rotate-90 left-[1.5vmin]"}
+                    className={isFirst ? "" : "-rotate-90 top-[10.5vmin] -rotate-90 -left-[0.5vmin]"}
                   />
                 </div>
               );
@@ -242,9 +415,13 @@ function Center({
       )}
 
       {/* Table Cards */}
-      <div className="flex flex-row absolute bottom-[0vmin] -left-[42vmin] scale-80 w-full">
+      <div className="flex flex-row absolute bottom-[25vmin] -left-[25vmin] w-full">
         {game.table.map((pair, i) => (
-          <div key={i} className="relative">
+          <div key={i} className="absolute" style={{
+            left: i * 5.5 + "vmin",
+            top: i * 2 + "vmin",
+            zIndex: i
+          }}>
             <PlayingCardComponent
               key={pair.attackCard.id}
               card={pair.attackCard}
@@ -260,7 +437,7 @@ function Center({
               <Button
                 variant="destructive"
                 onClick={() => socket.emit("forfeitDefense")}
-                className="absolute w-full mt-[1vmin] h-[6vmin] z-100 text-2xl"
+                className="absolute w-full mt-[1vmin] h-[6vmin] z-100 text-[3vmin]"
               >
                 Take
               </Button>
@@ -293,7 +470,7 @@ function PlayerSeat({
 
   // We use vmin for the radius so it scales automatically
   const radiusX = "45vmin";
-  const radiusY = "40vmin";
+  const radiusY = "38vmin";
 
   const sortedHand = player.id == myPlayerId ? [...player.hand].sort((a, b) =>
   {
@@ -359,8 +536,16 @@ function PlayerSeat({
         transform: "translate(-50%, -50%)",
       }}
     >
-      <div className={`text-3xl font-medium text-nowrap flex gap-[0.5vmin] flex-row ${player.connectionStatus == "disconnected" ? "text-gray-400 italic" : ""} ${player.ready ? "text-green-300" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""}`}>
-        {player.name} {" "}
+      {myPlayerId === null && player.connectionStatus == "disconnected" && (
+        <Button onClick={() => rejoinPlayer(player.id)} className="absolute z-100 text-[4vmin] not-italic w-[16vmin] h-[10vmin] rounded-[1vmin] top-[6vmin]">
+          Rejoin
+        </Button>
+      )}
+
+      <div className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
+        <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-300" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-300" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-300" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
+          {player.name} {" "}
+        </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (
           <div className="flex flex-row gap-[0.5vmin] items-center">
             <Star />
@@ -368,16 +553,6 @@ function PlayerSeat({
           </div>
         )}
       </div>
-
-      {(player.connectionStatus == "disconnected") && (
-        <>
-          {myPlayerId === null && (
-            <Button onClick={() => rejoinPlayer(player.id)} className="w-fit absolute top-[10vmin] z-100">
-              Rejoin
-            </Button>
-          )}
-        </>
-      )}
 
       <div className={`flex flex-row gap-[1vmin] mt-[1vmin] max-w-screen ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "max-h-[20vmin] scale-75 translate-y-[-12vmin]" : ""}`}>
         {player.id === myPlayerId ?
@@ -389,7 +564,6 @@ function PlayerSeat({
                   <div className={`flex flex-row flex-nowrap items-center justify-start`}>
                     {row.map((card, i) => (
                       <div
-                        key={card.id}
                         // shrink: Allows the wrapper to get smaller than the card
                         className="shrink basis-[15vmin] min-w-[1vmin] flex justify-end"
                         style={{
@@ -398,7 +572,7 @@ function PlayerSeat({
                         }}
                       >
                         <div className={`w-[15vmin]`}>
-                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerIndex === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
+                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
                         </div>
                       </div>
                     ))}
@@ -415,7 +589,7 @@ function PlayerSeat({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="h-[21vmin] w-[0.25vmin] bg-neutral-200/30 rounded-full mx-[0.75vmin]"
+                    className="h-[21vmin] w-[0.25vmin] bg-primary/50 rounded-full mx-[0.75vmin]"
                   />
                 )}
               </AnimatePresence>
@@ -427,7 +601,6 @@ function PlayerSeat({
                   <div className="flex flex-row flex-nowrap items-center justify-start">
                     {row.map((card, i) => (
                       <div
-                        key={card.id}
                         // shrink: Allows the wrapper to get smaller than the card
                         className="shrink basis-[15vmin] min-w-[1vmin]"
                         style={{
@@ -436,7 +609,7 @@ function PlayerSeat({
                         }}
                       >
                         <div className={`w-[15vmin]`}>
-                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerIndex === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
+                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
                         </div>
                       </div>
                     ))}
@@ -451,10 +624,11 @@ function PlayerSeat({
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down
-                    left: `${((i + 1 - player.hand.length / 2) * 1.75) - 7.5}vmin`,
+                    left: `${game.phase === "waiting" ?
+                      ((i + 1 - player.hand.length / 2) * 8.75) - 7.5 :
+                      ((i + 1 - player.hand.length / 2) * 1.75) - 7.5}vmin`,
                     top: `${i * 0.2}vmin`,
                     rotate: `${(i - 3) * 4}deg`,
-                    transform: "translate(0%, 0%)",
                     zIndex: i,
                   }}
                 >

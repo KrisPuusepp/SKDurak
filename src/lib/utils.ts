@@ -1,7 +1,8 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export function cn(...inputs: ClassValue[]) {
+export function cn(...inputs: ClassValue[])
+{
   return twMerge(clsx(inputs))
 }
 
@@ -34,3 +35,27 @@ export function shuffle(array: any[])
       array[randomIndex], array[currentIndex]];
   }
 }
+
+/**
+ * Gets an element from an array at a specific index, 
+ * wrapping around if the index is out of bounds.
+ */
+export function getCircularElement<T>(arr: T[], index: number): T
+{
+  const len = arr.length;
+  if (len === 0) throw new Error("Array is empty");
+
+  // The magic formula for circular indexing
+  const circularIndex = ((index % len) + len) % len;
+  return arr[circularIndex];
+}
+
+/**
+ * Calculates a wrapped index for an array of a given length.
+ * works for both positive and negative offsets.
+ */
+export const getCircularIndex = (length: number, index: number): number =>
+{
+  if (length <= 0) return 0; // Avoid division by zero
+  return ((index % length) + length) % length;
+};

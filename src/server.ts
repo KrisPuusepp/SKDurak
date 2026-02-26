@@ -9,7 +9,7 @@ import
   createDeck,
   validAttackCard,
 } from "./Durak";
-import { generateUUID } from "./lib/utils";
+import { generateUUID, getCircularElement, getCircularIndex } from "./lib/utils";
 
 const httpServer = createServer();
 
@@ -26,8 +26,8 @@ const io = new Server(httpServer, {
 
 let game: GameState = {
   players: [],
-  attackerIndex: 0,
-  defenderIndex: 1,
+  attackerQueue: [],
+  defenderIndex: 0,
   table: [],
   deck: [],
   trumpSuit: "hearts",
@@ -97,6 +97,7 @@ function startGame()
     player.hand = [];
   }
   game.winnerOrder = [];
+  game.table = [];
 
   game.deck = createDeck();
 
@@ -119,11 +120,9 @@ function startGame()
   }
 
   // Choose a random starting player
-  game.attackerIndex = Math.floor(Math.random() * game.players.length);
-  game.attackerIndex = (game.defenderIndex - 1);
-  if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
-
+  game.defenderIndex = Math.floor(Math.random() * game.players.length);
   game.phase = "attacking";
+  startNextTurn(false);
 }
 
 // --------------------
@@ -143,36 +142,42 @@ function giveCardsToPlayer(playerIndex: number)
   }
 }
 
-function startNextTurn(defenderLost: boolean)
+function startNextTurn(skipDefender: boolean)
 {
+  if (game.phase === "waiting") return;
   if (game.winnerOrder.length >= game.players.length - 1) return;
 
   // Clear table
   game.table = [];
 
   // Next turn
-  // Choose defender
-  if (defenderLost)
-  {
-    game.defenderIndex = (game.defenderIndex + 2) % game.players.length;
-  } else
-  {
-    game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
-  }
+  // Go to next defender
+  game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
   while (game.winnerOrder.includes(game.players[game.defenderIndex].id))
   {
     // Player has won already
     game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
   }
-  // Choose attacker
-  game.attackerIndex = (game.defenderIndex - 1);
-  if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
-  while (game.winnerOrder.includes(game.players[game.attackerIndex].id))
+  // Choose defender
+  if (skipDefender)
   {
-    // Player has won already
-    game.attackerIndex--;
-    if (game.attackerIndex < 0) game.attackerIndex = game.players.length - 1;
+    // Skip this defender and go to the one after this
+    game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
+    while (game.winnerOrder.includes(game.players[game.defenderIndex].id))
+    {
+      // Player has won already
+      game.defenderIndex = (game.defenderIndex + 1) % game.players.length;
+    }
   }
+
+  // Create attackerQueue
+  let playersStillInGame = game.players.filter((p) => !game.winnerOrder.includes(p.id));
+  let defenderIndexInAboveArray = playersStillInGame.findIndex((p) => p.index === game.defenderIndex);
+  game.attackerQueue = [getCircularElement<Player>(playersStillInGame, defenderIndexInAboveArray - 1).index, getCircularElement<Player>(playersStillInGame, defenderIndexInAboveArray + 1).index];
+  if (game.attackerQueue[0] == game.attackerQueue[1])
+    game.attackerQueue = game.attackerQueue.slice(1);
+
+  console.log("Queue is " + game.attackerQueue.join(", "));
 
   game.phase = "attacking";
 }
@@ -183,7 +188,13 @@ function checkForWinners()
 
   for (const player of game.players)
   {
-    if (player.hand.length === 0 && !game.winnerOrder.includes(player.id)) game.winnerOrder.push(player.id);
+    if (player.hand.length === 0 && !game.winnerOrder.includes(player.id))
+    {
+      game.winnerOrder.push(player.id);
+      let stopAttackerIndex = game.attackerQueue.findIndex((i) => i === player.index);
+      if (stopAttackerIndex !== -1)
+        game.attackerQueue = game.attackerQueue.slice(stopAttackerIndex + 1);
+    }
   }
 
   if (game.players.length - game.winnerOrder.length === 1)
@@ -226,6 +237,16 @@ io.on("connection", (socket) =>
 
     // Deny if game is in progress
     if (game.phase !== "waiting")
+    {
+      callback({ success: false });
+      return;
+    }
+
+    name = name.trim();
+    name = name.slice(0, 30);
+
+    // Deny if name is empty
+    if (name.length === 0)
     {
       callback({ success: false });
       return;
@@ -340,16 +361,18 @@ io.on("connection", (socket) =>
         game.table[game.table.length - 1].defenseCard = card;
 
         // Next phase
-        if (game.table.length === 6 || player.hand.length === 0)
+        if (game.table.length === 6 || player.hand.length === 0 || game.attackerQueue.length === 0)
         {
           // No more cards may be played
           game.phase = "animation";
+          let defenderIsOutOfCards = player.hand.length == 0;
           setTimeout(() =>
           {
-            giveCardsToPlayer(game.attackerIndex);
+            if (game.attackerQueue.length > 0)
+              giveCardsToPlayer(game.attackerQueue[0]);
             giveCardsToPlayer(game.defenderIndex);
             checkForWinners();
-            startNextTurn(false);
+            startNextTurn(defenderIsOutOfCards);
             broadcastGameState();
           }, 2000);
         } else
@@ -360,7 +383,7 @@ io.on("connection", (socket) =>
 
         console.log("Player " + player.name + " defends");
       }
-    } else if (game.attackerIndex === playerIndex)
+    } else if (game.attackerQueue.length > 0 && game.attackerQueue[0] === playerIndex)
     {
       // Attacking
 
@@ -407,19 +430,10 @@ io.on("connection", (socket) =>
     if (game.table.length == 0) return; // Haven't attacked yet
 
     // Give cards
-    giveCardsToPlayer(game.attackerIndex);
+    giveCardsToPlayer(game.attackerQueue[0]);
+    game.attackerQueue.shift();
 
-    // Next turn
-    if (game.attackerIndex == game.defenderIndex - 1 && game.players.length - game.winnerOrder.length > 2)
-    {
-      // Attacker 2 starts
-      game.attackerIndex = (game.defenderIndex + 1) % game.players.length;
-      while (game.winnerOrder.includes(game.players[game.attackerIndex].id))
-      {
-        // Player has won already
-        game.attackerIndex = (game.attackerIndex + 1) % game.players.length;
-      }
-    } else
+    if (game.attackerQueue.length == 0)
     {
       // Attacks and defense done
       giveCardsToPlayer(game.defenderIndex);
@@ -442,23 +456,26 @@ io.on("connection", (socket) =>
     if (playerIndex === -1) return;
 
     if (game.phase != "defending") return;
-    if (game.defenderIndex === playerIndex)
+    if (game.defenderIndex !== playerIndex) return;
+
+    // Take all cards on the table
+    for (const pair of game.table)
     {
-      // Take all cards on the table
-      for (const pair of game.table)
-      {
-        player.hand.push(pair.attackCard);
-        if (pair.defenseCard) player.hand.push(pair.defenseCard);
-      }
+      player.hand.push(pair.attackCard);
+      if (pair.defenseCard) player.hand.push(pair.defenseCard);
+    }
 
-      // Clear table
-      game.table = [];
-
+    game.phase = "animation";
+    setTimeout(() =>
+    {
       // Give cards
-      giveCardsToPlayer(game.attackerIndex);
+      giveCardsToPlayer(game.attackerQueue[0]);
+      giveCardsToPlayer(game.defenderIndex);
 
       startNextTurn(true);
-    }
+
+      broadcastGameState();
+    }, 1000);
 
     broadcastGameState();
   });

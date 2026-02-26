@@ -63,7 +63,7 @@ export interface GameState
 {
   players: Player[];
 
-  attackerIndex: number;
+  attackerQueue: number[];
   defenderIndex: number;
 
   table: TablePair[];

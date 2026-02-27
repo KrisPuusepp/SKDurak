@@ -481,13 +481,25 @@ io.on("connection", (socket) =>
   });
 
   // ---- Leave Game ----
-  socket.on("leaveGame", () =>
+  socket.on("leaveGame", (callback: (response: { success: boolean; }) => void) =>
   {
     const playerId = socketToPlayer.get(socket.id);
-    if (!playerId) return;
+    if (!playerId)
+    {
+      callback({ success: false });
+      return;
+    }
+
+    if (game.phase != "waiting")
+    {
+      callback({ success: false });
+      return;
+    }
 
     game.players = game.players.filter((p) => p.id !== playerId);
     socketToPlayer.delete(socket.id);
+
+    callback({ success: true });
 
     broadcastGameState();
   });

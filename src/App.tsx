@@ -210,8 +210,21 @@ export default function App()
       if (response.success)
       {
         setMyPlayerId(id);
+        localStorage.setItem("myPlayerId", id);
       } else
       {
+        localStorage.removeItem("myPlayerId");
+      }
+    });
+  };
+
+  function leaveGame()
+  {
+    socket.emit("leaveGame", (response: { success: boolean }) =>
+    {
+      if (response.success)
+      {
+        setMyPlayerId(null);
         localStorage.removeItem("myPlayerId");
       }
     });
@@ -437,6 +450,13 @@ export default function App()
             </div>
           </SheetContent>
         </Sheet>
+
+        {myPlayerId != null && game.phase === "waiting" && (
+          <Button variant="destructive" className="capitalize absolute top-16 left-4"
+            onClick={() => leaveGame()}>
+            Leave
+          </Button>
+        )}
 
         {/* Bottom Controls */}
         {game.phase === "waiting" && myPlayerId != null && (

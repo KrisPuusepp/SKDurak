@@ -145,9 +145,12 @@ export function PlayingCardComponent({ card, onClick, className, style }: Playin
   const glareOpacity = useTransform(y, [-0.5, 0.5], [0.5, 0]);
   const smoothGlare = useSpring(glareOpacity, springConfig);
 
+  // Detect if the current device is touch-capable
+  const isTouchDevice = typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>)
   {
-    if (hidden) return;
+    if (hidden || isTouchDevice) return; // skip tilt on touch devices
 
     const rect = event.currentTarget.getBoundingClientRect();
     x.set((event.clientX - rect.left) / rect.width - 0.5);

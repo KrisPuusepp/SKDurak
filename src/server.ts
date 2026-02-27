@@ -9,7 +9,7 @@ import
   createDeck,
   validAttackCard,
 } from "./Durak";
-import { generateUUID, getCircularElement, getCircularIndex } from "./lib/utils";
+import { generateUUID, getCircularElement, } from "./lib/utils";
 
 const httpServer = createServer();
 

@@ -1,6 +1,6 @@
 import React, { useContext, type ReactElement } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
-import { Heart as LucideHeartIcon, Diamond as LucideDiamondIcon, Club as LucideClubIcon, Spade as LucideSpadeIcon, CircleHelp as QuestionMark, Rabbit } from "lucide-react";
+import { Heart as LucideHeartIcon, Diamond as LucideDiamondIcon, Club as LucideClubIcon, Spade as LucideSpadeIcon, Rabbit } from "lucide-react";
 import type { PlayingCard } from "@/Durak";
 import { SettingsContext } from "@/App";
 

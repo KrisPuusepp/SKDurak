@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { createContext, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +129,32 @@ export default function App()
     root.classList.add(settings.backgroundTheme);
   }, [settings.backgroundTheme]);
 
+  const defenderRef = useRef<HTMLDivElement | null>(null)
+  const attackerRef = useRef<HTMLDivElement | null>(null)
+  const [positions, setPositions] = useState<{
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+  } | null>(null)
+
+  useEffect(() =>
+  {
+    if (defenderRef.current && attackerRef.current)
+    {
+      const rect1 = attackerRef.current.getBoundingClientRect()
+      const rect2 = defenderRef.current.getBoundingClientRect()
+
+      setPositions({
+        x1: rect1.left + rect1.width / 2,
+        y1: rect1.top + rect1.height / 2,
+        x2: rect2.left + rect2.width / 2,
+        y2: rect2.top + rect2.height / 2,
+      })
+    }
+  }, [game])
+
+
   useEffect(() =>
   {
     // Get the current hostname (IP or domain) from the browser's address bar
@@ -207,6 +233,81 @@ export default function App()
 
   return (
     <div className="h-screen w-screen relative overflow-hidden">
+      {/* Turn Arrow Between Players */}
+      {positions && (
+        <svg
+          className="absolute inset-0 pointer-events-none z-150 text-foreground/75"
+          width="100%"
+          height="100%"
+        >
+          <defs>
+            <marker
+              id="arrowhead"
+              viewBox="0 0 10 10"
+              refX="0"
+              refY="5"
+              markerWidth="3"
+              markerHeight="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path
+                d="M 0 0 L 10 5 L 0 10 Z"
+                fill="currentColor"
+              />
+            </marker>
+          </defs>
+
+          {(() =>
+          {
+            const { x1, y1, x2, y2 } = positions;
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            // How much to shorten the line from the middle (0 = no shortening, 0.1 = 10%)
+            const shortenFraction = 0.2;
+
+            // Vector from start to end
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+
+            // Shorten endpoints toward the center
+            const startX0 = x1 + dx * shortenFraction;
+            const startY0 = y1 + dy * shortenFraction;
+            const endX0 = x2 - dx * shortenFraction;
+            const endY0 = y2 - dy * shortenFraction;
+
+            // Strengths for curvature and endpoint pull
+            const curveStrength = -0.4;
+            const endpointStrength = -0.1;
+
+            // Pull endpoints slightly toward center (optional)
+            const startX = startX0 + (centerX - startX0) * endpointStrength;
+            const startY = startY0 + (centerY - startY0) * endpointStrength;
+            const endX = endX0 + (centerX - endX0) * endpointStrength;
+            const endY = endY0 + (centerY - endY0) * endpointStrength;
+
+            // Midpoint for quadratic curve
+            const midX = (startX + endX) / 2 + (centerX - (startX + endX) / 2) * curveStrength;
+            const midY = (startY + endY) / 2 + (centerY - (startY + endY) / 2) * curveStrength;
+
+            // Path string
+            const pathData = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+
+            return (
+              <path
+                d={pathData}
+                stroke="currentColor"
+                strokeWidth="10"
+                fill="none"
+                markerEnd="url(#arrowhead)"
+              />
+            )
+          })()}
+        </svg>
+      )}
+
       <SettingsContext.Provider value={{ settings, setSettings }}>
         {/* Table Container */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -257,6 +358,8 @@ export default function App()
                 rotationIndex={rotationIndex}
                 rejoinPlayer={rejoinPlayer}
                 myPlayerId={myPlayerId}
+                defenderRef={defenderRef}
+                attackerRef={attackerRef}
               />
             ))}
           </div>
@@ -470,12 +573,16 @@ function PlayerSeat({
   rotationIndex: index,
   rejoinPlayer,
   myPlayerId,
+  defenderRef,
+  attackerRef,
 }: {
   game: GameState;
   player: Player;
   rotationIndex: number;
   rejoinPlayer: (id: string) => void;
   myPlayerId: string | null;
+  defenderRef: React.RefObject<HTMLDivElement | null>;
+  attackerRef: React.RefObject<HTMLDivElement | null>;
 })
 {
   const SUIT_ORDER = ["spades", "hearts", "diamonds", "clubs"];
@@ -557,8 +664,8 @@ function PlayerSeat({
         </Button>
       )}
 
-      <div className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
-        <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-300" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-300" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-300" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
+      <div ref={game.defenderIndex == game.players.indexOf(player) ? defenderRef : (game.attackerQueue[0] == game.players.indexOf(player) ? attackerRef : null)} className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
+        <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
           {player.name} {" "}
         </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (

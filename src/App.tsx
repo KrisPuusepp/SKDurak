@@ -234,7 +234,7 @@ export default function App()
   return (
     <div className="h-screen w-screen relative overflow-hidden">
       {/* Turn Arrow Between Players */}
-      {positions && (
+      {positions && game.phase !== "waiting" && (
         <svg
           className="absolute inset-0 pointer-events-none z-10 text-foreground/75"
           width="100%"
@@ -670,7 +670,7 @@ function PlayerSeat({
         </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (
           <div className="flex flex-row gap-[0.5vmin] items-center">
-            <Star />
+            <Star className="w-[3vmin] h-[3vmin] text-yellow-500" />
             {game.winnerOrder.indexOf(player.id) + 1}
           </div>
         )}

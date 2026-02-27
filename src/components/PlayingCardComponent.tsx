@@ -218,7 +218,7 @@ export function PlayingCardComponent({ card, onClick, className, style }: Playin
             <div className="relative w-full h-full" style={{ transform: "translateZ(20px)" }}>
               <div className={`absolute top-0 left-0 flex flex-col items-center ${colors.accent}`}>
                 {settings.SKMode && card.rank && card.rank == 12 ? (
-                  <img src="./public/SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
+                  <img src="./SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
                 ) : (
                   <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
                 )}
@@ -249,7 +249,7 @@ export function PlayingCardComponent({ card, onClick, className, style }: Playin
 
               <div className={`absolute bottom-0 right-0 flex flex-col items-center transform rotate-180 ${colors.accent}`}>
                 {settings.SKMode && card.rank && card.rank == 12 ? (
-                  <img src="./public/SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
+                  <img src="./SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
                 ) : (
                   <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
                 )}

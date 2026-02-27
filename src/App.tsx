@@ -22,9 +22,10 @@ import { Checkbox } from "./components/ui/checkbox";
 const DEFAULT_SETTINGS: UserSettings = {
   backgroundTheme: "dark",
   cardTheme: "dark",
-  suitShape: "lucide",
+  suitShape: "classic",
   suitFill: "hollow",
   cardGlow: true,
+  SKMode: false,
 };
 
 export interface UserSettings
@@ -34,6 +35,7 @@ export interface UserSettings
   suitShape: "lucide" | "classic";
   suitFill: "hollow" | "filled";
   cardGlow: boolean;
+  SKMode: boolean;
 }
 
 export const SettingsContext = createContext<{
@@ -313,6 +315,19 @@ export default function App()
                     id="card-glow"
                     checked={settings.cardGlow}
                     onCheckedChange={(val) => setSettings({ ...settings, cardGlow: val as any })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end w-full gap-4 py-2">
+                <Label htmlFor="sk-mode" className="whitespace-nowrap font-medium">
+                  SK Mode
+                </Label>
+                <div className="w-full max-w-[50%]">
+                  <Checkbox
+                    id="sk-mode"
+                    checked={settings.SKMode}
+                    onCheckedChange={(val) => setSettings({ ...settings, SKMode: val as any })}
                   />
                 </div>
               </div>

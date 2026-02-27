@@ -365,14 +365,13 @@ io.on("connection", (socket) =>
         {
           // No more cards may be played
           game.phase = "animation";
-          let defenderIsOutOfCards = player.hand.length == 0;
           setTimeout(() =>
           {
             if (game.attackerQueue.length > 0)
               giveCardsToPlayer(game.attackerQueue[0]);
             giveCardsToPlayer(game.defenderIndex);
             checkForWinners();
-            startNextTurn(defenderIsOutOfCards);
+            startNextTurn(player.hand.length == 0);
             broadcastGameState();
           }, 2000);
         } else

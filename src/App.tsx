@@ -236,7 +236,7 @@ export default function App()
       {/* Turn Arrow Between Players */}
       {positions && (
         <svg
-          className="absolute inset-0 pointer-events-none z-150 text-foreground/75"
+          className="absolute inset-0 pointer-events-none z-10 text-foreground/75"
           width="100%"
           height="100%"
         >
@@ -299,7 +299,7 @@ export default function App()
               <path
                 d={pathData}
                 stroke="currentColor"
-                strokeWidth="10"
+                strokeWidth="1vmin"
                 fill="none"
                 markerEnd="url(#arrowhead)"
               />

@@ -113,6 +113,20 @@ export const CardColors: Record<string, ThemeConfig> = {
       bg: "bg-white",
     },
   },
+  purple: {
+    red: {
+      accent: "text-purple-500",
+      border: "border-purple-400/30",
+      glow: "shadow-[0_0_2vmin_rgba(0,0,,0.1)]",
+      bg: "bg-indigo-950/90",
+    },
+    black: {
+      accent: "text-gray-200",
+      border: "border-gray-700/50",
+      glow: "shadow-[0_0_2vmin_rgba(0,0,0,0.1)]",
+      bg: "bg-gray-950/90",
+    },
+  },
 };
 
 const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];

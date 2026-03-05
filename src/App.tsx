@@ -51,24 +51,25 @@ const SETTING_OPTIONS = {
   cardTheme: [
     { value: "dark", label: "Dark" },
     { value: "classic", label: "Classic" },
+    { value: "purple", label: "Purple" },
   ],
   suitShape: [
-    {
-      value: "lucide", label: <div className="flex items-center gap-2">
-        <p>Lucide</p>
-        {Object.entries(lucideSuitIcons).map(([name, Icon]) => (
-          <div className="flex items-center gap-2 fill-transparent">
-            <Icon className="w-4 h-4" />
-          </div>
-        ))}
-      </div>
-    },
     {
       value: "classic", label: <div className="flex items-center gap-2">
         <p>Classic</p>
         {Object.entries(svgSuitIcons).map(([name, svg]) => (
           <div className="flex items-center gap-2 fill-transparent">
             {svg}
+          </div>
+        ))}
+      </div>
+    },
+    {
+      value: "lucide", label: <div className="flex items-center gap-2">
+        <p>Lucide</p>
+        {Object.entries(lucideSuitIcons).map(([name, Icon]) => (
+          <div className="flex items-center gap-2 fill-transparent">
+            <Icon className="w-4 h-4" />
           </div>
         ))}
       </div>

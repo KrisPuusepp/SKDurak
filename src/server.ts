@@ -9,7 +9,7 @@ import
   createDeck,
   validAttackCard,
 } from "./Durak";
-import { generateUUID, getCircularElement, } from "./lib/utils";
+import { generateUUID, getCircularElement, shuffle, } from "./lib/utils";
 
 const httpServer = createServer();
 
@@ -97,6 +97,10 @@ function startGame()
     player.hand = [];
   }
   game.winnerOrder = [];
+  shuffle(game.players);
+  for(var i = 0; i < game.players.length; i++) {
+    game.players[i].index = i;
+  }
   game.table = [];
 
   game.deck = createDeck();

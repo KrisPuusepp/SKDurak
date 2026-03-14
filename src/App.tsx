@@ -685,7 +685,7 @@ function PlayerSeat({
         </Button>
       )}
 
-      <div ref={game.defenderIndex == game.players.indexOf(player) ? defenderRef : (game.attackerQueue[0] == game.players.indexOf(player) ? attackerRef : null)} className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
+      <div ref={game.defenderIndex == player.index ? defenderRef : (game.attackerQueue[0] == player.index ? attackerRef : null)} className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
         <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
           {player.name} {" "}
         </p>

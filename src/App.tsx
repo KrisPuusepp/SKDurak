@@ -18,6 +18,17 @@ import
 } from "@/components/ui/sheet"
 import { SettingRow } from "@/components/SettingRow";
 import { Checkbox } from "./components/ui/checkbox";
+import
+{
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 const DEFAULT_SETTINGS: UserSettings = {
   backgroundTheme: "dark",
@@ -100,7 +111,7 @@ let socket: Socket;
 export default function App()
 {
   const [game, setGame] = useState<GameState | null>(null);
-  const [name, setName] = useState("");
+  const [inputFieldName, setInputFieldName] = useState("");
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [settings, setSettings] = useState<UserSettings>(() =>
   {
@@ -192,9 +203,9 @@ export default function App()
 
   function joinNewPlayer()
   {
-    if (!name.trim()) return;
+    if (!inputFieldName.trim()) return;
 
-    socket.emit("joinNewPlayer", name, (response: { success: boolean; playerId?: string }) =>
+    socket.emit("joinNewPlayer", inputFieldName, (response: { success: boolean; playerId?: string }) =>
     {
       if (response.success && response.playerId)
       {
@@ -217,6 +228,13 @@ export default function App()
         localStorage.removeItem("myPlayerId");
       }
     });
+  };
+
+  function changeName()
+  {
+    if (!inputFieldName.trim()) return;
+
+    socket.emit("changeName", inputFieldName);
   };
 
   function leaveGame()
@@ -344,8 +362,8 @@ export default function App()
               <Center
                 game={game}
                 myPlayerId={myPlayerId}
-                name={name}
-                setName={setName}
+                name={inputFieldName}
+                setName={setInputFieldName}
                 join={joinNewPlayer}
               />
             </div>
@@ -449,6 +467,35 @@ export default function App()
                 </div>
               </div>
             </div>
+
+            <div className="flex items-center w-full">
+              <Dialog>
+                <form className="w-full mx-8">
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">Edit profile</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>Edit profile</DialogTitle>
+                    </DialogHeader>
+                    <Input
+                      placeholder="Your name"
+                      value={inputFieldName}
+                      onChange={(e) => setInputFieldName(e.target.value)}
+                      maxLength={30}
+                    />
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <DialogClose asChild>
+                        <Button type="submit" onClick={() => changeName()}>Save changes</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </form>
+              </Dialog>
+            </div>
           </SheetContent>
         </Sheet>
 
@@ -471,7 +518,7 @@ export default function App()
           </div>
         )}
       </SettingsContext.Provider>
-    </div>
+    </div >
   );
 }
 

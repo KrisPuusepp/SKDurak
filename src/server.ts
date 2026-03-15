@@ -98,7 +98,8 @@ function startGame()
   }
   game.winnerOrder = [];
   shuffle(game.players);
-  for(var i = 0; i < game.players.length; i++) {
+  for (var i = 0; i < game.players.length; i++)
+  {
     game.players[i].index = i;
   }
   game.table = [];
@@ -303,6 +304,23 @@ io.on("connection", (socket) =>
     socketToPlayer.set(socket.id, player.id);
 
     callback({ success: true });
+
+    broadcastGameState();
+  });
+
+  // ---- Change Name ----
+  socket.on("changeName", (newName: string) =>
+  {
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) return;
+
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    newName = newName.trim();
+    newName = newName.slice(0, 30);
+
+    player.name = newName;
 
     broadcastGameState();
   });

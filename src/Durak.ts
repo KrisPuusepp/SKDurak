@@ -44,6 +44,7 @@ export interface Player
 {
   id: string;               // Socket ID or unique user ID
   name: string;
+  alias: string;
   index: number;
   ready: boolean;
   hand: PlayingCard[];

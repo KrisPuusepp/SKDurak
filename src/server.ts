@@ -224,7 +224,7 @@ io.on("connection", (socket) =>
   socket.emit("gameState", buildStateForSocket(socket.id));
 
   // ---- Create & Join ----
-  socket.on("joinNewPlayer", (name: string, callback: (response: { success: boolean; playerId?: string }) => void) =>
+  socket.on("joinNewPlayer", (name: string, alias: string, callback: (response: { success: boolean; playerId?: string }) => void) =>
   {
     // Deny if already a player
     if (socketToPlayer.has(socket.id))
@@ -260,6 +260,7 @@ io.on("connection", (socket) =>
     const player: Player = {
       id: generateUUID(),
       name,
+      alias,
       index: game.players.length,
       ready: false,
       hand: [],
@@ -276,12 +277,12 @@ io.on("connection", (socket) =>
   });
 
   // ---- Rejoin Existing ----
-  socket.on("rejoinPlayer", (playerId: string, callback: (response: { success: boolean }) => void) =>
+  socket.on("rejoinPlayer", (playerId: string, callback: (response: { success: boolean, player: Player | null }) => void) =>
   {
     // Deny if already a player
     if (socketToPlayer.has(socket.id))
     {
-      callback({ success: false });
+      callback({ success: false, player: null });
       return;
     }
 
@@ -289,27 +290,27 @@ io.on("connection", (socket) =>
     if (!player)
     {
       // Player does not exist
-      callback({ success: false });
+      callback({ success: false, player: null });
       return;
     }
 
     if (player.connectionStatus === "connected")
     {
       // Player is already connected
-      callback({ success: false });
+      callback({ success: false, player: null });
       return;
     }
 
     player.connectionStatus = "connected";
     socketToPlayer.set(socket.id, player.id);
 
-    callback({ success: true });
+    callback({ success: true, player: player });
 
     broadcastGameState();
   });
 
-  // ---- Change Name ----
-  socket.on("changeName", (newName: string) =>
+  // ---- Change Profile ----
+  socket.on("changeProfile", (newName: string, newAlias: string) =>
   {
     const playerId = socketToPlayer.get(socket.id);
     if (!playerId) return;
@@ -319,8 +320,13 @@ io.on("connection", (socket) =>
 
     newName = newName.trim();
     newName = newName.slice(0, 30);
+    newAlias = newAlias.trim();
+    newAlias = newAlias.slice(0, 30);
+
+    if (newName.length === 0) return;
 
     player.name = newName;
+    player.alias = newAlias;
 
     broadcastGameState();
   });

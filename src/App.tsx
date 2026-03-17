@@ -23,7 +23,6 @@ import
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -111,7 +110,8 @@ let socket: Socket;
 export default function App()
 {
   const [game, setGame] = useState<GameState | null>(null);
-  const [inputFieldName, setInputFieldName] = useState("");
+  const [nameInputField, setNameInputField] = useState(localStorage.getItem("SKDurak-user-name") || "");
+  const [aliasInputField, setAliasInputField] = useState(localStorage.getItem("SKDurak-user-alias") || "");
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [settings, setSettings] = useState<UserSettings>(() =>
   {
@@ -126,10 +126,6 @@ export default function App()
       return DEFAULT_SETTINGS;
     }
   });
-  useEffect(() =>
-  {
-    localStorage.setItem("SKDurak-user-settings", JSON.stringify(settings));
-  }, [settings]);
   useEffect(() =>
   {
     const root = window.document.documentElement;
@@ -176,7 +172,6 @@ export default function App()
     }
   }
 
-
   useEffect(() =>
   {
     // Get the current hostname (IP or domain) from the browser's address bar
@@ -207,15 +202,28 @@ export default function App()
     };
   }, []);
 
+  useEffect(() =>
+  {
+    localStorage.setItem("SKDurak-user-name", nameInputField);
+  }, [nameInputField]);
+  useEffect(() =>
+  {
+    localStorage.setItem("SKDurak-user-alias", aliasInputField);
+  }, [aliasInputField]);
+  useEffect(() =>
+  {
+    localStorage.setItem("SKDurak-user-settings", JSON.stringify(settings));
+  }, [settings]);
+
   // -------------------------
   // Actions
   // -------------------------
 
   function joinNewPlayer()
   {
-    if (!inputFieldName.trim()) return;
+    if (!nameInputField.trim()) return;
 
-    socket.emit("joinNewPlayer", inputFieldName, (response: { success: boolean; playerId?: string }) =>
+    socket.emit("joinNewPlayer", nameInputField, aliasInputField, (response: { success: boolean; playerId?: string }) =>
     {
       if (response.success && response.playerId)
       {
@@ -227,12 +235,18 @@ export default function App()
 
   function rejoinPlayer(id: string)
   {
-    socket.emit("rejoinPlayer", id, (response: { success: boolean }) =>
+    socket.emit("rejoinPlayer", id, (response: { success: boolean, player: Player | null }) =>
     {
       if (response.success)
       {
         setMyPlayerId(id);
         localStorage.setItem("myPlayerId", id);
+
+        if (response.player)
+        {
+          setNameInputField(response.player.name);
+          setAliasInputField(response.player.alias);
+        }
       } else
       {
         localStorage.removeItem("myPlayerId");
@@ -240,11 +254,11 @@ export default function App()
     });
   };
 
-  function changeName()
+  function changeProfile()
   {
-    if (!inputFieldName.trim()) return;
+    if (!nameInputField.trim()) return;
 
-    socket.emit("changeName", inputFieldName);
+    socket.emit("changeProfile", nameInputField, aliasInputField);
   };
 
   function leaveGame()
@@ -372,8 +386,10 @@ export default function App()
               <Center
                 game={game}
                 myPlayerId={myPlayerId}
-                name={inputFieldName}
-                setName={setInputFieldName}
+                name={nameInputField}
+                setName={setNameInputField}
+                alias={aliasInputField}
+                setAlias={setAliasInputField}
                 join={joinNewPlayer}
               />
             </div>
@@ -489,9 +505,15 @@ export default function App()
                       <DialogTitle>Edit profile</DialogTitle>
                     </DialogHeader>
                     <Input
-                      placeholder="Your name"
-                      value={inputFieldName}
-                      onChange={(e) => setInputFieldName(e.target.value)}
+                      placeholder="Name"
+                      value={nameInputField}
+                      onChange={(e) => setNameInputField(e.target.value)}
+                      maxLength={30}
+                    />
+                    <Input
+                      placeholder="Alias (optional)"
+                      value={aliasInputField}
+                      onChange={(e) => setAliasInputField(e.target.value)}
                       maxLength={30}
                     />
                     <DialogFooter>
@@ -499,7 +521,7 @@ export default function App()
                         <Button variant="outline">Cancel</Button>
                       </DialogClose>
                       <DialogClose asChild>
-                        <Button type="submit" onClick={() => changeName()}>Save changes</Button>
+                        <Button type="submit" onClick={() => changeProfile()}>Save changes</Button>
                       </DialogClose>
                     </DialogFooter>
                   </DialogContent>
@@ -537,12 +559,16 @@ function Center({
   myPlayerId,
   name,
   setName,
+  alias,
+  setAlias,
   join,
 }: {
   game: GameState;
   myPlayerId: string | null;
   name: string;
   setName: (v: string) => void;
+  alias: string;
+  setAlias: (v: string) => void;
   join: () => void;
 })
 {
@@ -553,9 +579,15 @@ function Center({
         <div className="flex flex-col items-center justify-center gap-4 z-10">
           <Card className="p-6 w-72">
             <Input
-              placeholder="Your name"
+              placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              maxLength={30}
+            />
+            <Input
+              placeholder="Alias (optional)"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
               maxLength={30}
             />
             <Button onClick={join} className="w-full">
@@ -743,8 +775,11 @@ function PlayerSeat({
       )}
 
       <div ref={game.defenderIndex == player.index ? defenderRef : (game.attackerQueue[0] == player.index ? attackerRef : null)} className={`text-[5vmin] font-medium text-nowrap flex gap-[0.5vmin] flex-row`}>
+        <p className={`text-shadow-lg absolute -top-[3.75vmin] text-[2.5vmin] text-muted-foreground opacity-75`}>
+          {player.alias != "" ? player.name : ""}
+        </p>
         <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
-          {player.name} {" "}
+          {player.alias == "" ? player.name : player.alias} {" "}
         </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (
           <div className="flex flex-row gap-[0.5vmin] items-center">

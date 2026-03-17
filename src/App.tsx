@@ -733,7 +733,7 @@ function PlayerSeat({
 
   // We use vmin for the radius so it scales automatically
   const radiusX = "45vmin";
-  const radiusY = "38vmin";
+  const radiusY = "34vmin";
 
   const sortedHand = player.id == myPlayerId ? [...player.hand].sort((a, b) =>
   {
@@ -792,7 +792,7 @@ function PlayerSeat({
 
   return (
     <div
-      className="absolute flex flex-col items-center gap-[0.5vmin]"
+      className={`absolute flex flex-col items-center gap-[0.5vmin] ${player.id == myPlayerId ? "z-50" : ""}`}
       style={{
         left: `calc(50% + ${radiusX} * cos(${angle}deg))`,
         top: `calc(50% + ${radiusY} * sin(${angle}deg))`,

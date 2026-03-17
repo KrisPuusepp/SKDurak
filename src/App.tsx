@@ -621,6 +621,7 @@ function Center({
 
               return (
                 <div
+                  key={card.id + "-wrapper"}
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down
@@ -650,6 +651,7 @@ function Center({
             {
               return (
                 <div
+                  key={card.id + "-wrapper"}
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down
@@ -674,7 +676,7 @@ function Center({
       {/* Table Cards */}
       <div className="flex flex-row absolute bottom-[25vmin] -left-[25vmin] w-full">
         {game.table.map((pair, i) => (
-          <div key={i} className="absolute" style={{
+          <div key={"table-" + i} className="absolute" style={{
             left: i * 4.25 + "vmin",
             top: i * 2 + "vmin",
             zIndex: i
@@ -825,9 +827,10 @@ function PlayerSeat({
               {/* Trumps */}
               <div className="flex flex-col min-w-0 shrink">
                 {trumpRows.map((row, rowIndex) => (
-                  <div className={`flex flex-row flex-nowrap items-center justify-start`}>
+                  <div key={"trumps-" + rowIndex} className={`flex flex-row flex-nowrap items-center justify-start`}>
                     {row.map((card, i) => (
                       <div
+                        key={card.id + "-wrapper"}
                         // shrink: Allows the wrapper to get smaller than the card
                         className="shrink basis-[15vmin] min-w-[1vmin] flex justify-end"
                         style={{
@@ -862,9 +865,10 @@ function PlayerSeat({
               {/* Others */}
               <div className="flex flex-col min-w-0 shrink">
                 {nonTrumpRows.map((row, rowIndex) => (
-                  <div className="flex flex-row flex-nowrap items-center justify-start">
+                  <div key={"nonTrumps-" + rowIndex} className="flex flex-row flex-nowrap items-center justify-start">
                     {row.map((card, i) => (
                       <div
+                        key={card.id + "-wrapper"}
                         // shrink: Allows the wrapper to get smaller than the card
                         className="shrink basis-[15vmin] min-w-[1vmin]"
                         style={{
@@ -885,6 +889,7 @@ function PlayerSeat({
             <div className="scale-[0.7] absolute max-h-[1vmin] max-w-[1vmin]">
               {player.hand.map((card, i) => (
                 <div
+                  key={card.id + "-wrapper"}
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down

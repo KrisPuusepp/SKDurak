@@ -152,6 +152,16 @@ export default function App()
 
   useEffect(() =>
   {
+    recalculateTurnArrow();
+  }, [game])
+
+  window.onresize = () =>
+  {
+    recalculateTurnArrow();
+  }
+
+  function recalculateTurnArrow()
+  {
     if (defenderRef.current && attackerRef.current)
     {
       const rect1 = attackerRef.current.getBoundingClientRect()
@@ -164,7 +174,7 @@ export default function App()
         y2: rect2.top + rect2.height / 2,
       })
     }
-  }, [game])
+  }
 
 
   useEffect(() =>

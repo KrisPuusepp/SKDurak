@@ -504,13 +504,17 @@ export default function App()
                     <DialogHeader>
                       <DialogTitle>Edit profile</DialogTitle>
                     </DialogHeader>
+                    <Label htmlFor="edit-name">Name</Label>
                     <Input
+                      id="edit-name"
                       placeholder="Name"
                       value={nameInputField}
                       onChange={(e) => setNameInputField(e.target.value)}
                       maxLength={30}
                     />
+                    <Label htmlFor="edit-alias">Alias (optional)</Label>
                     <Input
+                      id="edit-alias"
                       placeholder="Alias (optional)"
                       value={aliasInputField}
                       onChange={(e) => setAliasInputField(e.target.value)}
@@ -576,15 +580,19 @@ function Center({
     <div className="absolute inset-0 flex flex-col items-center justify-center">
       {/* Center "Join Game" Popup*/}
       {game.phase === "waiting" && myPlayerId === null && (
-        <div className="flex flex-col items-center justify-center gap-4 z-10">
+        <div className="flex flex-col items-center justify-center z-10">
           <Card className="p-6 w-72">
+            <Label htmlFor="join-name">Name</Label>
             <Input
+              id="join-name"
               placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={30}
             />
+            <Label htmlFor="join-alias">Alias (optional)</Label>
             <Input
+              id="join-name"
               placeholder="Alias (optional)"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}

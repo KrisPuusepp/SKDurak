@@ -393,7 +393,7 @@ io.on("connection", (socket) =>
               giveCardsToPlayer(game.attackerQueue[0]);
             giveCardsToPlayer(game.defenderIndex);
             checkForWinners();
-            startNextTurn(player.hand.length == 0);
+            startNextTurn(game.players[game.defenderIndex].hand.length === 0);
             broadcastGameState();
           }, 2000);
         } else

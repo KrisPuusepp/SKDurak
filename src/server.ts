@@ -4,12 +4,21 @@ import
 {
   type GameState,
   type Player,
+  type PlayerStatsEntry,
   type PlayingCard,
   canBeat,
+  cardToNotation,
   createDeck,
   validAttackCard,
 } from "./Durak";
 import { generateUUID, getCircularElement, shuffle, } from "./lib/utils";
+import { saveGameRecord } from "./gameStore";
+import { readJsonFile } from "./storage";
+import path from "path";
+
+const GAMES_FILE = path.join(process.cwd(), "data", "games.json");
+const PLAYER_FILE = path.join(process.cwd(), "data", "playerstats.json");
+const SESSIONS_FILE = path.join(process.cwd(), "data", "sessionstats.json");
 
 const httpServer = createServer();
 
@@ -24,6 +33,7 @@ const io = new Server(httpServer, {
 // In-memory game state
 // --------------------
 
+let moves: string[] = [];
 let game: GameState = {
   players: [],
   attackerQueue: [],
@@ -93,6 +103,7 @@ function broadcastGameState()
 
 function startGame()
 {
+  moves = [];
   for (const player of game.players)
   {
     player.ready = false;
@@ -156,7 +167,8 @@ function startNextTurn(skipDefender: boolean)
   if (game.winnerOrder.length >= game.players.length - 1) return;
 
   // Move remaining table cards to discard pile
-  for(const pair of game.table) {
+  for (const pair of game.table)
+  {
     game.discardPile.push(pair.attackCard);
     if (pair.defenseCard) game.discardPile.push(pair.defenseCard);
   }
@@ -189,7 +201,8 @@ function startNextTurn(skipDefender: boolean)
   if (game.attackerQueue[0] == game.attackerQueue[1])
     game.attackerQueue = game.attackerQueue.slice(1);
 
-  console.log("Queue is " + game.attackerQueue.join(", "));
+  // Update moves by starting a new line
+  moves.push(game.defenderIndex + ":");
 
   game.phase = "attacking";
 }
@@ -218,7 +231,24 @@ function checkForWinners()
     let lastPlayer = game.players.find((p) => !game.winnerOrder.includes(p.id));
     if (lastPlayer)
       game.winnerOrder.push(lastPlayer.id);
+
+    // Save game
+    saveGame();
   }
+}
+
+async function saveGame()
+{
+  await saveGameRecord({
+    trumpSuit: game.trumpSuit,
+    turnOrder: game.players.map(p => p.name),
+    winnerOrder: game.winnerOrder.map(id =>
+    {
+      const player = game.players.find(p => p.id === id);
+      return player?.name ?? id;
+    }),
+    moves: moves,
+  });
 }
 
 // --------------------
@@ -262,6 +292,16 @@ io.on("connection", (socket) =>
     {
       callback({ success: false });
       return;
+    }
+
+    // Deny if name is already taken
+    for (const player of game.players)
+    {
+      if (player.name.toLowerCase() === name.toLowerCase())
+      {
+        callback({ success: false });
+        return;
+      }
     }
 
     const player: Player = {
@@ -332,6 +372,15 @@ io.on("connection", (socket) =>
 
     if (newName.length === 0) return;
 
+    // Deny if name is already taken
+    for (const player of game.players)
+    {
+      if (player.name.toLowerCase() === newName.toLowerCase())
+      {
+        return;
+      }
+    }
+
     player.name = newName;
     player.alias = newAlias;
 
@@ -397,6 +446,9 @@ io.on("connection", (socket) =>
         // Add to table
         game.table[game.table.length - 1].defenseCard = card;
 
+        // Update moves
+        moves[moves.length - 1] += " " + cardToNotation(card);
+
         // Next phase
         if (game.table.length === 6 || player.hand.length === 0 || game.attackerQueue.length === 0)
         {
@@ -438,6 +490,9 @@ io.on("connection", (socket) =>
       // Add to table
       game.table.push({ attackCard: card });
 
+      // Update moves
+      moves[moves.length - 1] += " " + cardToNotation(card);
+
       // Next phase
       game.phase = "defending";
 
@@ -469,6 +524,9 @@ io.on("connection", (socket) =>
     // Give cards
     giveCardsToPlayer(game.attackerQueue[0]);
     game.attackerQueue.shift();
+
+    // Update moves
+    moves[moves.length - 1] += " X";
 
     if (game.attackerQueue.length == 0)
     {
@@ -502,6 +560,9 @@ io.on("connection", (socket) =>
       if (pair.defenseCard) player.hand.push(pair.defenseCard);
     }
     game.table = [];
+
+    // Update moves
+    moves[moves.length - 1] += " F";
 
     game.phase = "animation";
     setTimeout(() =>
@@ -540,6 +601,38 @@ io.on("connection", (socket) =>
     callback({ success: true });
 
     broadcastGameState();
+  });
+
+  // ---- Statistics ----
+  socket.on("requestGames", async (opts: { limit?: number } | undefined, cb) =>
+  {
+    const games = await readJsonFile(GAMES_FILE, []);
+    if (!opts?.limit) return cb?.(games);
+    return cb?.(games.slice(-opts.limit));
+  });
+
+  // request a single replay by id
+  socket.on("requestReplay", async (gameId: string, cb) =>
+  {
+    const games = await readJsonFile(GAMES_FILE, []);
+    const g = games.find((gm: any) => gm.id === gameId);
+    cb?.(g ?? null);
+  });
+
+  // request all player stats
+  socket.on("requestPlayerStats", async (playerName: string | null, cb) =>
+  {
+    const players = await readJsonFile<Record<string, PlayerStatsEntry>>(PLAYER_FILE, {});
+
+    if (!playerName) return cb?.(players);
+    return cb?.(players[playerName] ?? null);
+  });
+
+  // request session stats
+  socket.on("requestSessionStats", async (cb) =>
+  {
+    const sessions = await readJsonFile(SESSIONS_FILE, []);
+    cb?.(sessions);
   });
 
   // ---- Disconnect ----

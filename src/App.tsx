@@ -382,7 +382,7 @@ export default function App()
             </div>
 
             {/* Center Content: Absolutely positioned relative to the center of the table */}
-            <div className="absolute z-10">
+            <div className="absolute">
               <Center
                 game={game}
                 myPlayerId={myPlayerId}

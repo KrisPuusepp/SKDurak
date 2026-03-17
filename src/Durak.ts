@@ -165,3 +165,90 @@ export function validAttackCard(
 
   return true;
 }
+
+// ---------- Statistics Interfaces ----------
+
+export interface GameRecord
+{
+  endedAt: string;          // ISO timestamp when game ended (iso string)
+  trumpSuit: Suit;          // "hearts", "diamonds", "clubs", or "spades"
+  turnOrder: string[];      // player names in turn order at start
+  winnerOrder: string[];    // player names ordered by finish (1st ... last)
+  moves: string[];          // notation array
+  playersCount: number;     // number of players in the game
+}
+
+export interface PlayerGameStatsBucket
+{
+  gamesPlayed: number;
+  results: number[]; // index 0 => first place counts, index N-1 => last place counts
+}
+
+export interface PlayerPairStats
+{
+  totalGames: number;
+  timesBeat: number;
+  winRate: number; // 0..1
+}
+
+export interface PlayerStatsEntry
+{
+  totalGames: number;
+  gameStats: {
+    // keys "2".."6"
+    [playersCount: string]: PlayerGameStatsBucket | undefined;
+  };
+  averageResult: number; // 0..1 (internal); you can multiply by 100 for %
+  playerStats: { [otherPlayerName: string]: PlayerPairStats };
+}
+
+export interface SessionPlayerSummary
+{
+  sumResult: number;    // internal sum of result (0..1) for averaging
+  games: number;
+  averageResult: number; // 0..1
+}
+
+export interface SessionRecord
+{
+  date: string; // YYYY-MM-DD
+  totalGames: number;
+  players: { [playerName: string]: SessionPlayerSummary };
+}
+
+export interface StorageSchema
+{
+  games: GameRecord[];                            // games.json
+  playerStats: { [playerName: string]: PlayerStatsEntry }; // playerstats.json
+  sessions: SessionRecord[];                      // sessionstats.json
+}
+
+export function cardToNotation(card: PlayingCard): string
+{
+  let rank;
+  let suit;
+  switch (card.rank)
+  {
+    case 0: rank = "2"; break;
+    case 1: rank = "3"; break;
+    case 2: rank = "4"; break;
+    case 3: rank = "5"; break;
+    case 4: rank = "6"; break;
+    case 5: rank = "7"; break;
+    case 6: rank = "8"; break;
+    case 7: rank = "9"; break;
+    case 8: rank = "10"; break;
+    case 9: rank = "J"; break;
+    case 10: rank = "Q"; break;
+    case 11: rank = "K"; break;
+    case 12: rank = "A"; break;
+  }
+  switch (card.suit)
+  {
+    case "hearts": suit = "H"; break;
+    case "diamonds": suit = "D"; break;
+    case "clubs": suit = "C"; break;
+    case "spades": suit = "S"; break;
+  }
+  return `${rank}-${suit}`;
+}

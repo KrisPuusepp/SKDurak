@@ -71,6 +71,7 @@ export interface GameState
 
   trumpSuit: Suit;
   deck: PlayingCard[];
+  discardPile: PlayingCard[];
 
   phase: GamePhase;
 

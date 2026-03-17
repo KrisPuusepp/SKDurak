@@ -30,6 +30,7 @@ let game: GameState = {
   defenderIndex: 0,
   table: [],
   deck: [],
+  discardPile: [],
   trumpSuit: "hearts",
   phase: "waiting",
   winnerOrder: [],
@@ -74,6 +75,7 @@ function buildStateForSocket(socketId: string): GameState
       }
       return card;
     }),
+    discardPile: game.discardPile.map((card) => maskCard(card)),
   };
 }
 
@@ -103,6 +105,7 @@ function startGame()
     game.players[i].index = i;
   }
   game.table = [];
+  game.discardPile = [];
 
   game.deck = createDeck();
 
@@ -152,7 +155,11 @@ function startNextTurn(skipDefender: boolean)
   if (game.phase === "waiting") return;
   if (game.winnerOrder.length >= game.players.length - 1) return;
 
-  // Clear table
+  // Move remaining table cards to discard pile
+  for(const pair of game.table) {
+    game.discardPile.push(pair.attackCard);
+    if (pair.defenseCard) game.discardPile.push(pair.defenseCard);
+  }
   game.table = [];
 
   // Next turn
@@ -494,6 +501,7 @@ io.on("connection", (socket) =>
       player.hand.push(pair.attackCard);
       if (pair.defenseCard) player.hand.push(pair.defenseCard);
     }
+    game.table = [];
 
     game.phase = "animation";
     setTimeout(() =>
@@ -505,7 +513,7 @@ io.on("connection", (socket) =>
       startNextTurn(true);
 
       broadcastGameState();
-    }, 1000);
+    }, 500);
 
     broadcastGameState();
   });

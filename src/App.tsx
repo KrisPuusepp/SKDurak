@@ -610,7 +610,7 @@ function Center({
       {/* Deck Container */}
       {game.deck.length > 0 && (
         <div className="absolute left-[15vmin] bottom-[15vmin] flex flex-row items-center gap-[0.5vmin]">
-          <div className="absolute text-[5vmin] text-shadow-md rounded-full z-10 -left-[14vmin] top-[11vmin] text-right w-[10vmin]">
+          <div className="absolute text-[5vmin] text-shadow-md rounded-full z-10 -left-[2vmin] top-[20vmin] text-left w-[10vmin]">
             {game.deck.length}x
           </div>
 
@@ -624,7 +624,7 @@ function Center({
                   className="absolute"
                   style={{
                     // Offsets each card slightly to the right and down
-                    top: `${i * 0.15}vmin`,
+                    top: `${i * -0.15}vmin`,
                     left: `${i * 0.35}vmin`,
                     zIndex: i,
                   }}
@@ -642,11 +642,40 @@ function Center({
         </div>
       )}
 
+      {/* Discard Pile Container */}
+      {game.discardPile.length > 0 && (
+        <div className="absolute -left-[25vmin] -bottom-[7vmin] flex flex-row items-center gap-[0.5vmin]">
+          <div className="relative scale-50">
+            {game.discardPile.map((card, i) =>
+            {
+              return (
+                <div
+                  className="absolute"
+                  style={{
+                    // Offsets each card slightly to the right and down
+                    top: `${i * 0.15}vmin`,
+                    left: `${i * 0.35}vmin`,
+                    zIndex: i,
+                    transform: `rotate(${(i * 1234.1234 * Math.sin(i)
+                    ) % 15 - 45}deg)`,
+                  }}
+                >
+                  <PlayingCardComponent
+                    key={card.id}
+                    card={card}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Table Cards */}
       <div className="flex flex-row absolute bottom-[25vmin] -left-[25vmin] w-full">
         {game.table.map((pair, i) => (
           <div key={i} className="absolute" style={{
-            left: i * 5.5 + "vmin",
+            left: i * 4.25 + "vmin",
             top: i * 2 + "vmin",
             zIndex: i
           }}>

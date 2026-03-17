@@ -334,6 +334,8 @@ io.on("connection", (socket) =>
   // ---- Toggle Ready ----
   socket.on("toggleReady", () =>
   {
+    if (game.phase !== "waiting") return;
+
     const playerId = socketToPlayer.get(socket.id);
     if (!playerId) return;
 
@@ -453,6 +455,7 @@ io.on("connection", (socket) =>
     if (playerIndex === -1) return;
 
     if (game.phase != "attacking") return;
+    if (game.attackerQueue[0] !== playerIndex) return;
     if (player.hand.length == 0) return;
     if (game.table.length == 0) return; // Haven't attacked yet
 

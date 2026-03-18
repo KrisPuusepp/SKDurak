@@ -297,7 +297,7 @@ io.on("connection", (socket) =>
     // Deny if name is already taken
     for (const player of game.players)
     {
-      if (player.name.toLowerCase() === name.toLowerCase())
+      if (player.id !== socketToPlayer.get(socket.id) && player.name.toLowerCase() === name.toLowerCase())
       {
         callback({ success: false });
         return;
@@ -375,7 +375,7 @@ io.on("connection", (socket) =>
     // Deny if name is already taken
     for (const player of game.players)
     {
-      if (player.name.toLowerCase() === newName.toLowerCase())
+      if (player.id !== socketToPlayer.get(socket.id) && player.name.toLowerCase() === newName.toLowerCase())
       {
         return;
       }

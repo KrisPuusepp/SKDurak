@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { lucideSuitIcons, PlayingCardComponent, svgSuitIcons } from "./components/PlayingCardComponent";
-import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard } from "./Durak";
-import { Check, Settings, Star } from "lucide-react";
+import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard, type SessionRecord } from "./Durak";
+import { Calendar, Check, Settings, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import
@@ -28,6 +28,7 @@ import
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { SessionList } from "./components/SessionList";
 
 const DEFAULT_SETTINGS: UserSettings = {
   backgroundTheme: "dark",
@@ -126,6 +127,7 @@ export default function App()
       return DEFAULT_SETTINGS;
     }
   });
+  const [sessions, setSessions] = useState<SessionRecord[]>([]);
   useEffect(() =>
   {
     const root = window.document.documentElement;
@@ -434,7 +436,7 @@ export default function App()
             <SheetHeader>
               <SheetTitle>Settings</SheetTitle>
             </SheetHeader>
-            <div className="space-y-1 w-50% h-100%">
+            <div>
               <SettingRow
                 label="Background Theme"
                 id="background-theme"
@@ -535,6 +537,23 @@ export default function App()
           </SheetContent>
         </Sheet>
 
+        {/* Top Right Session Stats Menu */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="capitalize absolute top-4 right-4" size="icon" onClick={() => { socket.emit("requestSessionStats", (r: SessionRecord[]) => setSessions(r || [])); }}>
+              <Calendar className="w-4 h-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>Session Stats</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-1 w-full h-full">
+              <SessionList sessions={sessions} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {myPlayerId != null && game.phase === "waiting" && (
           <Button variant="destructive" className="capitalize absolute top-16 left-4"
             onClick={() => leaveGame()}>
@@ -580,7 +599,7 @@ function Center({
     <div className="absolute inset-0 flex flex-col items-center justify-center">
       {/* Center "Join Game" Popup*/}
       {game.phase === "waiting" && myPlayerId === null && (
-        <div className="flex flex-col items-center justify-center z-10">
+        <div className="flex flex-col items-center justify-center z-100">
           <Card className="p-6 w-72">
             <Label htmlFor="join-name">Name</Label>
             <Input
@@ -682,7 +701,7 @@ function Center({
       )}
 
       {/* Table Cards */}
-      <div className="flex flex-row absolute bottom-[25vmin] -left-[25vmin] w-full">
+      <div className="flex flex-row absolute bottom-[25vmin] -left-[25vmin] w-full z-10">
         {game.table.map((pair, i) => (
           <div key={"table-" + i} className="absolute" style={{
             left: i * 4.25 + "vmin",
@@ -818,7 +837,7 @@ function PlayerSeat({
           {player.alias != "" ? player.name : ""}
         </p>
         <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
-          {player.alias == "" ? player.name : player.alias} {" "}
+          {player.alias == "" ? player.name : player.alias} {" "} {player.hand.length > 0 && "(" + player.hand.length + ")"}
         </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (
           <div className="flex flex-row gap-[0.5vmin] items-center">

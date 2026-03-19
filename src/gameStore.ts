@@ -158,8 +158,8 @@ function getNeighbors(turnOrder: string[], index: number)
 {
   const N = turnOrder.length;
 
-  const left = turnOrder[(index - 1 + N) % N];
-  const right = turnOrder[(index + 1) % N];
+  const left = turnOrder[(index + 1) % N];
+  const right = turnOrder[(index - 1 + N) % N];
 
   return { left, right };
 }

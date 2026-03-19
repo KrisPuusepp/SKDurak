@@ -544,11 +544,11 @@ export default function App()
               <Calendar className="w-4 h-4" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right">
+          <SheetContent side="right" className="min-w-screen sm:min-w-[600px]">
             <SheetHeader>
               <SheetTitle>Session Stats</SheetTitle>
             </SheetHeader>
-            <div className="space-y-1 w-full h-full">
+            <div className="w-full h-full overflow-y-scroll">
               <SessionList sessions={sessions} />
             </div>
           </SheetContent>
@@ -599,7 +599,7 @@ function Center({
     <div className="absolute inset-0 flex flex-col items-center justify-center">
       {/* Center "Join Game" Popup*/}
       {game.phase === "waiting" && myPlayerId === null && (
-        <div className="flex flex-col items-center justify-center z-100">
+        <div className="flex flex-col items-center justify-center z-50">
           <Card className="p-6 w-72">
             <Label htmlFor="join-name">Name</Label>
             <Input
@@ -827,7 +827,7 @@ function PlayerSeat({
       }}
     >
       {myPlayerId === null && player.connectionStatus == "disconnected" && (
-        <Button onClick={() => rejoinPlayer(player.id)} className="absolute z-100 text-[4vmin] not-italic w-[16vmin] h-[10vmin] rounded-[1vmin] top-[6vmin]">
+        <Button onClick={() => rejoinPlayer(player.id)} className="absolute z-50 text-[4vmin] not-italic w-[16vmin] h-[10vmin] rounded-[1vmin] top-[6vmin]">
           Rejoin
         </Button>
       )}

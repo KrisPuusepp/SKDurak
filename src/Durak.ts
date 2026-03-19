@@ -191,6 +191,13 @@ export interface PlayerPairStats
   winRate: number; // 0..1
 }
 
+export interface PlayerPairStatsSplit
+{
+  overall: PlayerPairStats;
+  left: PlayerPairStats; // for games where the player is on the left
+  right: PlayerPairStats; // for games where the player is on the right
+}
+
 export interface PlayerStatsEntry
 {
   totalGames: number;
@@ -198,22 +205,18 @@ export interface PlayerStatsEntry
     // keys "2".."6"
     [playersCount: string]: PlayerGameStatsBucket | undefined;
   };
-  averageResult: number; // 0..1 (internal); you can multiply by 100 for %
-  playerStats: { [otherPlayerName: string]: PlayerPairStats };
-}
-
-export interface SessionPlayerSummary
-{
-  sumResult: number;    // internal sum of result (0..1) for averaging
-  games: number;
+  sumResult: number;     // internal sum of result (0..1)
   averageResult: number; // 0..1
+  playerStats: {
+    [otherPlayerName: string]: PlayerPairStatsSplit;
+  };
 }
 
 export interface SessionRecord
 {
   date: string; // YYYY-MM-DD
   totalGames: number;
-  players: { [playerName: string]: SessionPlayerSummary };
+  players: { [playerName: string]: PlayerStatsEntry };
 }
 
 export interface StorageSchema

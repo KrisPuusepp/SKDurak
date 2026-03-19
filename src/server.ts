@@ -12,13 +12,15 @@ import
   validAttackCard,
 } from "./Durak";
 import { generateUUID, getCircularElement, shuffle, } from "./lib/utils";
-import { saveGameRecord } from "./gameStore";
+import { rebuildAllStats, saveGameRecord } from "./gameStore";
 import { readJsonFile } from "./storage";
 import path from "path";
 
 const GAMES_FILE = path.join(process.cwd(), "data", "games.json");
 const PLAYER_FILE = path.join(process.cwd(), "data", "playerstats.json");
 const SESSIONS_FILE = path.join(process.cwd(), "data", "sessionstats.json");
+
+rebuildAllStats();
 
 const httpServer = createServer();
 

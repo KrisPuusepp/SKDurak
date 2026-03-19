@@ -7,8 +7,8 @@ import
   type PlayerGameStatsBucket,
   type PlayerPairStats,
   type SessionRecord,
-  type SessionPlayerSummary,
   type Suit,
+  type PlayerPairStatsSplit,
 } from "@/Durak";
 import { readJsonFile, writeJsonFileAtomic } from "./storage";
 
@@ -32,6 +32,7 @@ function placeToResult(place: number, playersCount: number): number
   return 1 - (place / (playersCount - 1));
 }
 
+// Loads the .json files, saves the game record, updates the other .json stats files and saves everything
 export async function saveGameRecord(recordPartial: {
   trumpSuit: Suit;
   turnOrder: string[];
@@ -39,7 +40,6 @@ export async function saveGameRecord(recordPartial: {
   moves: string[];
 })
 {
-  // create the record
   const endedAt = new Date().toISOString();
   const playersCount = recordPartial.turnOrder.length;
 
@@ -52,21 +52,20 @@ export async function saveGameRecord(recordPartial: {
     playersCount,
   };
 
-  // read existing files
   const games = await readJsonFile<GameRecord[]>(GAMES_FILE, []);
   const playerStats = await readJsonFile<Record<string, PlayerStatsEntry>>(PLAYER_FILE, {});
-  const sessions = await readJsonFile<SessionRecord[]>(SESSIONS_FILE, []);
+  const sessionsArr = await readJsonFile<SessionRecord[]>(SESSIONS_FILE, []);
 
-  // append game
+  const sessionsMap = new Map(sessionsArr.map(s => [s.date, s] as const));
+
   games.push(record);
+  accumulatePlayerStatsMap(playerStats, record);
+  accumulateSessionStats(sessionsMap, record);
 
-  // update playerStats
-  await updatePlayerStats(playerStats, record);
+  const sessions = Array.from(sessionsMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
 
-  // update sessions
-  await updateSessions(sessions, record);
-
-  // write back atomically
   await Promise.all([
     writeJsonFileAtomic(GAMES_FILE, games),
     writeJsonFileAtomic(PLAYER_FILE, playerStats),
@@ -76,124 +75,205 @@ export async function saveGameRecord(recordPartial: {
   return record;
 }
 
-async function updatePlayerStats(
+function createEmptyPlayerStatsEntry(): PlayerStatsEntry
+{
+  return {
+    totalGames: 0,
+    gameStats: {},
+    sumResult: 0,
+    averageResult: 0,
+    playerStats: {},
+  };
+}
+
+function getWinnerOrderPositionMap(record: GameRecord): Record<string, number>
+{
+  const positionOf: Record<string, number> = {};
+  record.winnerOrder.forEach((name, i) =>
+  {
+    positionOf[name] = i;
+  });
+  return positionOf;
+}
+
+function ensurePlayerStatsEntry(
+  stats: Record<string, PlayerStatsEntry>,
+  playerName: string
+): PlayerStatsEntry
+{
+  if (!stats[playerName])
+  {
+    stats[playerName] = createEmptyPlayerStatsEntry();
+  }
+  return stats[playerName];
+}
+
+function ensureBucket(
+  entry: PlayerStatsEntry,
+  playersCount: number
+): PlayerGameStatsBucket
+{
+  const key = String(playersCount);
+
+  if (!entry.gameStats[key])
+  {
+    entry.gameStats[key] = {
+      gamesPlayed: 0,
+      results: Array(playersCount).fill(0),
+    };
+  }
+
+  return entry.gameStats[key]!;
+}
+
+function createEmptyPairStats(): PlayerPairStats
+{
+  return {
+    totalGames: 0,
+    timesBeat: 0,
+    winRate: 0,
+  };
+}
+
+function createEmptyPairStatsSplit(): PlayerPairStatsSplit
+{
+  return {
+    overall: createEmptyPairStats(),
+    left: createEmptyPairStats(),
+    right: createEmptyPairStats(),
+  };
+}
+
+function updatePairStats(
+  ps: PlayerPairStats,
+  didBeat: boolean
+)
+{
+  ps.totalGames += 1;
+  if (didBeat) ps.timesBeat += 1;
+  ps.winRate = ps.timesBeat / ps.totalGames;
+}
+
+function getNeighbors(turnOrder: string[], index: number)
+{
+  const N = turnOrder.length;
+
+  const left = turnOrder[(index - 1 + N) % N];
+  const right = turnOrder[(index + 1) % N];
+
+  return { left, right };
+}
+
+/**
+ * Mutates a record of player stats in-place for one game.
+ */
+function accumulatePlayerStatsMap(
   playerStats: Record<string, PlayerStatsEntry>,
   record: GameRecord
 )
 {
   const N = record.playersCount;
+  const positionOf = getWinnerOrderPositionMap(record);
 
-  // For quick index lookup
-  const positionOf: Record<string, number> = {};
-  record.winnerOrder.forEach((name, idx) =>
+  for (let i = 0; i < record.turnOrder.length; i++)
   {
-    positionOf[name] = idx;
-  });
+    const playerName = record.turnOrder[i];
 
-  for (const playerName of record.turnOrder)
-  {
-    // ensure entry exists
-    if (!playerStats[playerName])
-    {
-      playerStats[playerName] = {
-        totalGames: 0,
-        gameStats: {},
-        averageResult: 0,
-        playerStats: {},
-      };
-    }
-
-    const entry = playerStats[playerName];
+    const entry = ensurePlayerStatsEntry(playerStats, playerName);
     entry.totalGames += 1;
 
-    // update gameStats for this player under playersCount N
-    const key = String(N);
-    if (!entry.gameStats[key])
-    {
-      // initialize bucket with results array length N and zeros
-      entry.gameStats[key] = {
-        gamesPlayed: 0,
-        results: Array(N).fill(0),
-      } as PlayerGameStatsBucket;
-    }
-
-    const bucket = entry.gameStats[key] as PlayerGameStatsBucket;
+    const bucket = ensureBucket(entry, N);
     bucket.gamesPlayed += 1;
 
-    const place = positionOf[playerName] ?? (N - 1); // fallback last
-    // increment result count
+    const place = positionOf[playerName] ?? (N - 1);
     bucket.results[place] = (bucket.results[place] ?? 0) + 1;
 
-    // update averageResult (internal 0..1)
     const result = placeToResult(place, N);
-    // incremental average:
-    const prevCount = entry.totalGames - 1;
-    const prevAverage = entry.averageResult ?? 0;
-    const newAverage = (prevAverage * prevCount + result) / (prevCount + 1);
-    entry.averageResult = newAverage;
+    entry.sumResult += result;
+    entry.averageResult = entry.sumResult / entry.totalGames;
 
-    // update pairwise stats with every other player in the game
+    const { left, right } = getNeighbors(record.turnOrder, i);
+
     for (const other of record.turnOrder)
     {
       if (other === playerName) continue;
+
       if (!entry.playerStats[other])
       {
-        entry.playerStats[other] = {
-          totalGames: 0,
-          timesBeat: 0,
-          winRate: 0,
-        };
+        entry.playerStats[other] = createEmptyPairStatsSplit();
       }
-      const ps = entry.playerStats[other];
-      ps.totalGames += 1;
-      // "timesBeat" increments when player appears before other in winnerOrder
-      const playerPlace = place;
+
+      const split = entry.playerStats[other];
+
       const otherPlace = positionOf[other] ?? (N - 1);
-      if (playerPlace < otherPlace)
+      const didBeat = place < otherPlace;
+
+      // Always update overall
+      updatePairStats(split.overall, didBeat);
+
+      // Only update left/right if meaningful
+      if (N > 2)
       {
-        ps.timesBeat += 1;
+        if (other === left)
+        {
+          updatePairStats(split.left, didBeat);
+        }
+        else if (other === right)
+        {
+          updatePairStats(split.right, didBeat);
+        }
       }
-      ps.winRate = ps.totalGames > 0 ? ps.timesBeat / ps.totalGames : 0;
     }
   }
 }
 
-async function updateSessions(sessions: SessionRecord[], record: GameRecord)
+function accumulateSessionStats(
+  sessionsMap: Map<string, SessionRecord>,
+  record: GameRecord
+)
 {
   const date = isoDateString(new Date(record.endedAt).getTime());
-  // find or create today's session
-  let session = sessions.find(s => s.date === date);
-  if (!session)
+
+  if (!sessionsMap.has(date))
   {
-    session = { date, totalGames: 0, players: {} };
-    sessions.push(session);
-    // keep sorted by date in ascending order
-    sessions.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    sessionsMap.set(date, {
+      date,
+      totalGames: 0,
+      players: {},
+    });
   }
 
+  const session = sessionsMap.get(date)!;
   session.totalGames += 1;
 
-  // compute each player's result and update player sums
-  const N = record.playersCount;
-  const positionOf: Record<string, number> = {};
-  record.winnerOrder.forEach((name, i) => positionOf[name] = i);
+  accumulatePlayerStatsMap(session.players, record);
+}
 
-  for (const playerName of record.turnOrder)
+export function buildStatsFromGames(games: GameRecord[])
+{
+  const playerStats: Record<string, PlayerStatsEntry> = {};
+  const sessionsMap = new Map<string, SessionRecord>();
+
+  for (const game of games)
   {
-    const place = positionOf[playerName] ?? (N - 1);
-    const result = placeToResult(place, N); // 0..1
-
-    if (!session.players[playerName])
-    {
-      session.players[playerName] = {
-        sumResult: 0,
-        games: 0,
-        averageResult: 0,
-      };
-    }
-    const splay = session.players[playerName];
-    splay.sumResult += result;
-    splay.games += 1;
-    splay.averageResult = splay.sumResult / splay.games;
+    accumulatePlayerStatsMap(playerStats, game);
+    accumulateSessionStats(sessionsMap, game);
   }
+
+  const sessions = Array.from(sessionsMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
+  return { playerStats, sessions };
+}
+
+export async function rebuildAllStats()
+{
+  const games = await readJsonFile<GameRecord[]>(GAMES_FILE, []);
+  const { playerStats, sessions } = buildStatsFromGames(games);
+
+  await Promise.all([
+    writeJsonFileAtomic(PLAYER_FILE, playerStats),
+    writeJsonFileAtomic(SESSIONS_FILE, sessions),
+  ]);
 }

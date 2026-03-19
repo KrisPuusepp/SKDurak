@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { SessionRecord, SessionPlayerSummary } from "@/Durak";
+import type { SessionRecord } from "@/Durak";
 
 import
 {
@@ -36,7 +36,7 @@ function SessionCard({ session }: { session: SessionRecord })
   {
     const rows = Object.entries(session.players).map(([name, summary]) => ({
       name,
-      games: summary.games,
+      games: summary.totalGames,
       avg: summary.averageResult,
       summary,
     }));

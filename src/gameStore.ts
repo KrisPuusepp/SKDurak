@@ -240,13 +240,27 @@ function accumulateSessionStats(
       date,
       totalGames: 0,
       players: {},
+      timeline: [],
     });
   }
 
   const session = sessionsMap.get(date)!;
   session.totalGames += 1;
 
+  // update player stats in this session
   accumulatePlayerStatsMap(session.players, record);
+
+  // --- snapshot averages after this game ---
+  const averagesSnapshot: Record<string, number> = {};
+  for (const [playerName, stats] of Object.entries(session.players))
+  {
+    averagesSnapshot[playerName] = stats.averageResult;
+  }
+
+  session.timeline.push({
+    gameIndex: session.totalGames,
+    averages: averagesSnapshot,
+  });
 }
 
 export function buildStatsFromGames(games: GameRecord[])

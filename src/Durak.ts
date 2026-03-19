@@ -217,6 +217,7 @@ export interface SessionRecord
   date: string; // YYYY-MM-DD
   totalGames: number;
   players: { [playerName: string]: PlayerStatsEntry };
+  timeline: Array<{ gameIndex: number; averages: Record<string, number> }>;
 }
 
 export interface StorageSchema

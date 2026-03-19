@@ -18,6 +18,7 @@ import
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { SessionPlayerTimelineChart } from "./SessionPlayerTimelineChart";
 
 export function SessionList({ sessions }: { sessions: SessionRecord[] })
 {
@@ -210,6 +211,8 @@ function SessionCard({
                 )}
               </TableBody>
             </Table>
+
+            <SessionPlayerTimelineChart session={session} />
 
             <div className="my-4">
               <p className="mt-4 text-lg italic font-bold">

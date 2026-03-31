@@ -83,7 +83,7 @@ export function SessionPlayerTimelineChart({ session }: SessionPlayerTimelineCha
             {allPlayers.map((player, idx) => (
               <Line
                 key={player}
-                type="basis"
+                type="monotone"
                 dataKey={player}
                 connectNulls={true} // <-- important: continue line over gaps
                 stroke={`hsl(${(idx / allPlayers.length) * 360}, 65%, 50%)`}

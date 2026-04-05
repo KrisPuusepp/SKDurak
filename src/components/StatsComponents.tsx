@@ -18,6 +18,7 @@ import
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 /* RadialPercent component */
 export function RadialPercent({ size = 40, percent }: { size?: number; percent: number })
@@ -155,4 +156,105 @@ export function PlayerSubCard({
       </Collapsible>
     </Card>
   );
+}
+
+export function PlayerGameStatsDetails({ entry }: { entry: PlayerStatsEntry })
+{
+  const buckets = useMemo(() =>
+  {
+    return Object.entries(entry.gameStats)
+      .filter(([_, bucket]) => bucket && bucket.gamesPlayed > 0)
+      .sort((a, b) => Number(a[0]) - Number(b[0]));
+  }, [entry.gameStats]);
+
+  if (buckets.length === 0)
+  {
+    return <div className="text-sm text-muted-foreground">No game data yet.</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {buckets.map(([countStr, bucket]) =>
+      {
+        if (!bucket) return null;
+        const playersCount = Number(countStr);
+        
+        // Calculate average for this specific count
+        let sum = 0;
+        bucket.results.forEach((count, place) => {
+          const resultValue = playersCount <= 1 ? 1 : 1 - (place / (playersCount - 1));
+          sum += count * resultValue;
+        });
+        const bucketAvg = sum / bucket.gamesPlayed;
+
+        // Prepare chart data
+        const data = bucket.results.map((count, i) => ({
+          place: `${i + 1}${getOrdinal(i + 1)}`,
+          count,
+          placeIndex: i
+        }));
+
+        return (
+          <Card key={countStr} className="p-3 bg-muted/30">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <div className="font-bold text-sm">{playersCount} Players</div>
+                <div className="text-xs text-muted-foreground">{bucket.gamesPlayed} games</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <RadialPercent percent={Math.round(bucketAvg * 100)} size={32} />
+                <span className="text-[10px] mt-1 text-muted-foreground">Avg.</span>
+              </div>
+            </div>
+
+            <div className="h-32 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 5, right: 5, left: -30, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="place" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    cursor={{fill: 'transparent'}}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-popover text-popover-foreground p-1 text-[10px] rounded shadow-sm border">
+                            {payload[0].value} games
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                    {data.map((entry, index) => {
+                       const t = playersCount <= 1 ? 1 : 1 - (index / (playersCount - 1));
+                       const hue = t * 120;
+                       return <Cell key={`cell-${index}`} fill={`hsl(${hue}, 70%, 50%)`} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function getOrdinal(n: number) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }

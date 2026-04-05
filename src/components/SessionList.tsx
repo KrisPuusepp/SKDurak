@@ -18,7 +18,7 @@ import
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-import { SessionPlayerTimelineChart } from "./SessionPlayerTimelineChart";
+import { PlayerTimelineChart } from "./PlayerTimelineChart";
 import { PlayerSubCard, ResultCell } from "./StatsComponents";
 
 export function SessionList({ sessions }: { sessions: SessionRecord[] })
@@ -120,7 +120,7 @@ function SessionCard({
               </TableBody>
             </Table>
 
-            <SessionPlayerTimelineChart session={session} />
+            <PlayerTimelineChart timeline={session.timeline} title={`${session.date} — Avg. Results Over Time`} />
 
             <div className="my-4">
               <p className="mt-4 text-lg italic font-bold">

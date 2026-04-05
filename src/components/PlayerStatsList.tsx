@@ -1,6 +1,6 @@
 // PlayerStatsList.tsx
 import { useMemo, useState } from "react";
-import type { PlayerStatsEntry } from "@/Durak";
+import type { AllPlayerStats, PlayerStatsEntry, TimelinePoint } from "@/Durak";
 import
 {
   Table,
@@ -19,17 +19,19 @@ import
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { PlayerSubCard, ResultCell, PlayerGameStatsDetails } from "./StatsComponents";
+import { PlayerTimelineChart } from "./PlayerTimelineChart";
 
 interface PlayerStatsListProps
 {
-  playerStats: Record<string, PlayerStatsEntry>;
+  playerStats: AllPlayerStats;
+  timeline: TimelinePoint[];
 }
 
-export function PlayerStatsList({ playerStats }: PlayerStatsListProps)
+export function PlayerStatsList({ playerStats, timeline }: PlayerStatsListProps)
 {
   const sortedPlayers = useMemo(() =>
   {
-    return Object.entries(playerStats)
+    return Object.entries(playerStats.players)
       .map(([name, entry]) => ({ name, entry }))
       .sort((a, b) => b.entry.averageResult - a.entry.averageResult);
   }, [playerStats]);
@@ -40,7 +42,7 @@ export function PlayerStatsList({ playerStats }: PlayerStatsListProps)
       <div className="space-y-2">
         <h3 className="text-xl font-bold italic">All-Time Rankings</h3>
         <p className="text-sm text-muted-foreground">
-          Average result across all games played. 1st place is worth 100% and last place is worth 0%.
+          Average results across all games played. 1st place is worth 100% and last place is worth 0%.
         </p>
         <Table>
           <TableHeader>
@@ -60,6 +62,9 @@ export function PlayerStatsList({ playerStats }: PlayerStatsListProps)
             ))}
           </TableBody>
         </Table>
+        <div className="space-y-4">
+          <PlayerTimelineChart timeline={timeline} title="All-Time Avg. Results" />
+        </div>
       </div>
 
       {/* 2. Detailed Player Stats */}

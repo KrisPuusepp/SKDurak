@@ -3,27 +3,28 @@
 import { useMemo } from "react"
 import { LineChart, Line, XAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { type SessionRecord } from "@/Durak"
+import { type TimelinePoint } from "@/Durak"
 
-interface SessionPlayerTimelineChartProps
+interface PlayerTimelineChartProps
 {
-  session: SessionRecord
+  timeline: TimelinePoint[]
+  title?: string
 }
 
-export function SessionPlayerTimelineChart({ session }: SessionPlayerTimelineChartProps)
+export function PlayerTimelineChart({ timeline, title = "Avg. Results Over Time" }: PlayerTimelineChartProps)
 {
   // Prepare chart data
   const chartData = useMemo(() =>
   {
     // Gather all players ever appeared
     const allPlayers = new Set<string>();
-    session.timeline.forEach((point) =>
+    timeline.forEach((point) =>
     {
       Object.keys(point.averages).forEach((player) => allPlayers.add(player));
     });
 
     // Convert timeline into array suitable for Recharts
-    return session.timeline.map((point) =>
+    return timeline.map((point) =>
     {
       const entry: Record<string, number | undefined> = { gameIndex: point.gameIndex };
       for (const player of allPlayers)
@@ -32,19 +33,19 @@ export function SessionPlayerTimelineChart({ session }: SessionPlayerTimelineCha
       }
       return entry;
     });
-  }, [session.timeline]);
+  }, [timeline]);
 
   const allPlayers = useMemo(() =>
   {
     const set = new Set<string>();
-    session.timeline.forEach((t) => Object.keys(t.averages).forEach((p) => set.add(p)));
+    timeline.forEach((t) => Object.keys(t.averages).forEach((p) => set.add(p)));
     return Array.from(set);
-  }, [session.timeline]);
+  }, [timeline]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{session.date} — Avg. Results Over Time</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={500}>
@@ -62,16 +63,16 @@ export function SessionPlayerTimelineChart({ session }: SessionPlayerTimelineCha
                 if (!active || !payload || payload.length === 0) return null;
 
                 return (
-                  <div className="bg-muted p-2 rounded shadow-lg">
-                    <div className="font-medium mb-1">Game {label}</div>
+                  <div className="bg-muted p-2 rounded shadow-lg border">
+                    <div className="font-medium mb-1 border-b pb-1">Game {label}</div>
                     {payload.map((p) =>
                     {
                       const color = p.color ?? p.stroke ?? "currentColor"; // pick the line color
                       const value = Math.round((p.value as number ?? 0) * 100);
                       return (
-                        <div key={p.dataKey} className="flex justify-between" style={{ color }}>
+                        <div key={p.dataKey} className="flex justify-between gap-4" style={{ color }}>
                           <span>{p.dataKey}: </span>
-                          <span>{value}%</span>
+                          <span className="font-bold">{value}%</span>
                         </div>
                       );
                     })}
@@ -87,14 +88,14 @@ export function SessionPlayerTimelineChart({ session }: SessionPlayerTimelineCha
                 dataKey={player}
                 connectNulls={true} // <-- important: continue line over gaps
                 stroke={`hsl(${(idx / allPlayers.length) * 360}, 65%, 50%)`}
-                strokeWidth={1}
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 1 }}
+                activeDot={{ r: 4 }}
                 isAnimationActive={true}
               />
             ))}
 
-            <Legend verticalAlign="bottom" />
+            <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

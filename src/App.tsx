@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { lucideSuitIcons, PlayingCardComponent, svgSuitIcons } from "./components/PlayingCardComponent";
-import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard, type SessionRecord, type GameRecord, type PlayerStatsEntry } from "./Durak";
+import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard, type SessionRecord, type GameRecord, type AllPlayerStats } from "./Durak";
 import { Calendar, Check, History, Settings, Star, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
@@ -130,7 +130,7 @@ export default function App()
     }
   });
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
-  const [allPlayerStats, setAllPlayerStats] = useState<Record<string, PlayerStatsEntry>>({});
+  const [allPlayerStats, setAllPlayerStats] = useState<AllPlayerStats>({ players: {}, timeline: [] });
   const [gameHistory, setGameHistory] = useState<GameRecord[]>([]);
   useEffect(() =>
   {
@@ -546,7 +546,7 @@ export default function App()
           {/* Player Stats */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" onClick={() => { socket.emit("requestPlayerStats", null, (r: Record<string, PlayerStatsEntry>) => setAllPlayerStats(r || {})); }}>
+              <Button variant="outline" size="icon" onClick={() => { socket.emit("requestPlayerStats", null, (r: AllPlayerStats) => setAllPlayerStats(r || {})); }}>
                 <Users className="w-4 h-4" />
               </Button>
             </SheetTrigger>
@@ -555,7 +555,7 @@ export default function App()
                 <SheetTitle>All-Time Player Stats</SheetTitle>
               </SheetHeader>
               <div className="w-full h-full overflow-y-scroll">
-                <PlayerStatsList playerStats={allPlayerStats} />
+                <PlayerStatsList playerStats={allPlayerStats} timeline={allPlayerStats.timeline} />
               </div>
             </SheetContent>
           </Sheet>

@@ -9,6 +9,8 @@ import
   type SessionRecord,
   type Suit,
   type PlayerPairStatsSplit,
+  type TimelinePoint,
+  type AllPlayerStats,
 } from "@/Durak";
 import { readJsonFile, writeJsonFileAtomic } from "./storage";
 import { isoDateString } from "@/lib/utils";
@@ -47,14 +49,25 @@ export async function saveGameRecord(recordPartial: {
   };
 
   const games = await readJsonFile<GameRecord[]>(GAMES_FILE, []);
-  const playerStats = await readJsonFile<Record<string, PlayerStatsEntry>>(PLAYER_FILE, {});
+  const allPlayerStats = await readJsonFile<AllPlayerStats>(PLAYER_FILE, { players: {}, timeline: [] });
   const sessionsArr = await readJsonFile<SessionRecord[]>(SESSIONS_FILE, []);
 
   const sessionsMap = new Map(sessionsArr.map(s => [s.date, s] as const));
 
   games.push(record);
-  accumulatePlayerStatsMap(playerStats, record);
+  accumulatePlayerStatsMap(allPlayerStats.players, record);
   accumulateSessionStats(sessionsMap, record);
+
+  // snapshot for global timeline
+  const averagesSnapshot: Record<string, number> = {};
+  for (const [name, stats] of Object.entries(allPlayerStats.players))
+  {
+    averagesSnapshot[name] = stats.averageResult;
+  }
+  allPlayerStats.timeline.push({
+    gameIndex: games.length,
+    averages: averagesSnapshot,
+  });
 
   const sessions = Array.from(sessionsMap.values()).sort((a, b) =>
     a.date.localeCompare(b.date)
@@ -62,7 +75,7 @@ export async function saveGameRecord(recordPartial: {
 
   await Promise.all([
     writeJsonFileAtomic(GAMES_FILE, games),
-    writeJsonFileAtomic(PLAYER_FILE, playerStats),
+    writeJsonFileAtomic(PLAYER_FILE, allPlayerStats),
     writeJsonFileAtomic(SESSIONS_FILE, sessions),
   ]);
 
@@ -257,20 +270,44 @@ function accumulateSessionStats(
   });
 }
 
+function accumulateGlobalStats(
+  timeline: TimelinePoint[],
+  players: Record<string, PlayerStatsEntry>,
+)
+{
+  // --- snapshot averages ---
+  const averagesSnapshot: Record<string, number> = {};
+  for (const [playerName, stats] of Object.entries(players))
+  {
+    averagesSnapshot[playerName] = stats.averageResult;
+  }
+
+  timeline.push({
+    gameIndex: timeline.length + 1,
+    averages: averagesSnapshot,
+  });
+}
+
 export function buildStatsFromGames(games: GameRecord[])
 {
-  const playerStats: Record<string, PlayerStatsEntry> = {};
+  const players: Record<string, PlayerStatsEntry> = {};
   const sessionsMap = new Map<string, SessionRecord>();
+  const timeline: TimelinePoint[] = [];
 
+  let gameCount = 0;
   for (const game of games)
   {
-    accumulatePlayerStatsMap(playerStats, game);
+    gameCount++;
+    accumulatePlayerStatsMap(players, game);
     accumulateSessionStats(sessionsMap, game);
+    accumulateGlobalStats(timeline, players);
   }
 
   const sessions = Array.from(sessionsMap.values()).sort((a, b) =>
     a.date.localeCompare(b.date)
   );
+
+  const playerStats: AllPlayerStats = { players, timeline };
 
   return { playerStats, sessions };
 }

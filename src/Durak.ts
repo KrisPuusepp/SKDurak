@@ -212,18 +212,30 @@ export interface PlayerStatsEntry
   };
 }
 
+export interface TimelinePoint
+{
+  gameIndex: number;
+  averages: Record<string, number>;
+}
+
 export interface SessionRecord
 {
   date: string; // YYYY-MM-DD
   totalGames: number;
   players: { [playerName: string]: PlayerStatsEntry };
-  timeline: Array<{ gameIndex: number; averages: Record<string, number> }>;
+  timeline: TimelinePoint[];
+}
+
+export interface AllPlayerStats
+{
+  players: Record<string, PlayerStatsEntry>;
+  timeline: TimelinePoint[];
 }
 
 export interface StorageSchema
 {
   games: GameRecord[];                            // games.json
-  playerStats: { [playerName: string]: PlayerStatsEntry }; // playerstats.json
+  playerStats: AllPlayerStats;                    // playerstats.json
   sessions: SessionRecord[];                      // sessionstats.json
 }
 

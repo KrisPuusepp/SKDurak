@@ -31,6 +31,17 @@ import
 import { SessionList } from "./components/SessionList";
 import { PlayerStatsList } from "./components/PlayerStatsList";
 import { GameHistoryList } from "./components/GameHistoryList";
+import { playSFX } from "./lib/sound";
+
+function usePrevious<T>(value: T)
+{
+  const ref = useRef<T>(value);
+  useEffect(() =>
+  {
+    ref.current = value;
+  });
+  return ref.current;
+}
 
 const DEFAULT_SETTINGS: UserSettings = {
   backgroundTheme: "dark",
@@ -39,6 +50,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   suitFill: "hollow",
   cardGlow: true,
   SKMode: false,
+  sfxEnabled: true,
 };
 
 export interface UserSettings
@@ -49,6 +61,7 @@ export interface UserSettings
   suitFill: "hollow" | "filled";
   cardGlow: boolean;
   SKMode: boolean;
+  sfxEnabled: boolean;
 }
 
 export const SettingsContext = createContext<{
@@ -113,6 +126,7 @@ let socket: Socket;
 export default function App()
 {
   const [game, setGame] = useState<GameState | null>(null);
+  const prevGame = usePrevious(game);
   const [nameInputField, setNameInputField] = useState(localStorage.getItem("SKDurak-user-name") || "");
   const [aliasInputField, setAliasInputField] = useState(localStorage.getItem("SKDurak-user-alias") || "");
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
@@ -129,6 +143,31 @@ export default function App()
       return DEFAULT_SETTINGS;
     }
   });
+
+  // Sound Effects logic
+  useEffect(() =>
+  {
+    if (!game || !prevGame) return;
+
+    // Attack card played (table length increased)
+    if (game.table.length > prevGame.table.length)
+    {
+      playSFX("attack", settings.sfxEnabled);
+    }
+
+    // Defend card played (defense card added to the last attack)
+    if (game.table[game.table.length - 1]?.defenseCard && !prevGame.table[prevGame.table.length - 1]?.defenseCard)
+    {
+      playSFX("defend", settings.sfxEnabled);
+    }
+
+    // Table emptied
+    if (game.table.length === 0 && prevGame.table.length > 0)
+    {
+      playSFX("pickup", settings.sfxEnabled);
+    }
+  }, [game, settings.sfxEnabled]);
+
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [allPlayerStats, setAllPlayerStats] = useState<AllPlayerStats>({ players: {}, timeline: [] });
   const [gameHistory, setGameHistory] = useState<GameRecord[]>([]);
@@ -505,6 +544,19 @@ export default function App()
                     id="sk-mode"
                     checked={settings.SKMode}
                     onCheckedChange={(val) => setSettings({ ...settings, SKMode: val as any })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end w-full gap-4 py-2">
+                <Label htmlFor="sfx-enabled" className="whitespace-nowrap font-medium">
+                  SFX Enabled
+                </Label>
+                <div className="w-full max-w-[50%]">
+                  <Checkbox
+                    id="sfx-enabled"
+                    checked={settings.sfxEnabled}
+                    onCheckedChange={(val) => setSettings({ ...settings, sfxEnabled: val as any })}
                   />
                 </div>
               </div>

@@ -11,18 +11,12 @@ import
   type PlayerPairStatsSplit,
 } from "@/Durak";
 import { readJsonFile, writeJsonFileAtomic } from "./storage";
+import { isoDateString } from "@/lib/utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const GAMES_FILE = path.join(DATA_DIR, "games.json");
 const PLAYER_FILE = path.join(DATA_DIR, "playerstats.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessionstats.json");
-
-// helpers
-function isoDateString(ts = Date.now()): string
-{
-  const d = new Date(ts);
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
-}
 
 // convert place (0-based) into result 0..1 given playersCount N
 function placeToResult(place: number, playersCount: number): number

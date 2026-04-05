@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { lucideSuitIcons, PlayingCardComponent, svgSuitIcons } from "./components/PlayingCardComponent";
-import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard, type SessionRecord } from "./Durak";
-import { Calendar, Check, Settings, Star } from "lucide-react";
+import { canBeat, validAttackCard, type GameState, type Player, type PlayingCard, type SessionRecord, type GameRecord, type PlayerStatsEntry } from "./Durak";
+import { Calendar, Check, History, Settings, Star, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import
@@ -29,6 +29,8 @@ import
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { SessionList } from "./components/SessionList";
+import { PlayerStatsList } from "./components/PlayerStatsList";
+import { GameHistoryList } from "./components/GameHistoryList";
 
 const DEFAULT_SETTINGS: UserSettings = {
   backgroundTheme: "dark",
@@ -128,6 +130,8 @@ export default function App()
     }
   });
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [allPlayerStats, setAllPlayerStats] = useState<Record<string, PlayerStatsEntry>>({});
+  const [gameHistory, setGameHistory] = useState<GameRecord[]>([]);
   useEffect(() =>
   {
     const root = window.document.documentElement;
@@ -537,22 +541,59 @@ export default function App()
           </SheetContent>
         </Sheet>
 
-        {/* Top Right Session Stats Menu */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="capitalize absolute top-4 right-4" size="icon" onClick={() => { socket.emit("requestSessionStats", (r: SessionRecord[]) => setSessions(r || [])); }}>
-              <Calendar className="w-4 h-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="min-w-screen sm:min-w-[600px]">
-            <SheetHeader>
-              <SheetTitle>Session Stats</SheetTitle>
-            </SheetHeader>
-            <div className="w-full h-full overflow-y-scroll">
-              <SessionList sessions={sessions} />
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* Top Right Menus */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          {/* Player Stats */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" onClick={() => { socket.emit("requestPlayerStats", null, (r: Record<string, PlayerStatsEntry>) => setAllPlayerStats(r || {})); }}>
+                <Users className="w-4 h-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="min-w-screen sm:min-w-[600px]">
+              <SheetHeader>
+                <SheetTitle>All-Time Player Stats</SheetTitle>
+              </SheetHeader>
+              <div className="w-full h-full overflow-y-scroll">
+                <PlayerStatsList playerStats={allPlayerStats} />
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Game History */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" onClick={() => { socket.emit("requestGames", {}, (r: GameRecord[]) => setGameHistory(r || [])); }}>
+                <History className="w-4 h-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="min-w-screen sm:min-w-[600px]">
+              <SheetHeader>
+                <SheetTitle>Game History</SheetTitle>
+              </SheetHeader>
+              <div className="w-full h-full overflow-y-scroll">
+                <GameHistoryList games={gameHistory} />
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Session Stats */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="capitalize" size="icon" onClick={() => { socket.emit("requestSessionStats", (r: SessionRecord[]) => setSessions(r || [])); }}>
+                <Calendar className="w-4 h-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="min-w-screen sm:min-w-[600px]">
+              <SheetHeader>
+                <SheetTitle>Session Stats</SheetTitle>
+              </SheetHeader>
+              <div className="w-full h-full overflow-y-scroll">
+                <SessionList sessions={sessions} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
         {myPlayerId != null && game.phase === "waiting" && (
           <Button variant="destructive" className="capitalize absolute top-16 left-4"

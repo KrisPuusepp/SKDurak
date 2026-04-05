@@ -59,3 +59,9 @@ export const getCircularIndex = (length: number, index: number): number =>
   if (length <= 0) return 0; // Avoid division by zero
   return ((index % length) + length) % length;
 };
+
+export function isoDateString(ts = Date.now()): string
+{
+  const d = new Date(ts);
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}

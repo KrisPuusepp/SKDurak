@@ -178,10 +178,11 @@ export function PlayerGameStatsDetails({ entry }: { entry: PlayerStatsEntry })
       {
         if (!bucket) return null;
         const playersCount = Number(countStr);
-        
+
         // Calculate average for this specific count
         let sum = 0;
-        bucket.results.forEach((count, place) => {
+        bucket.results.forEach((count, place) =>
+        {
           const resultValue = playersCount <= 1 ? 1 : 1 - (place / (playersCount - 1));
           sum += count * resultValue;
         });
@@ -211,22 +212,24 @@ export function PlayerGameStatsDetails({ entry }: { entry: PlayerStatsEntry })
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 5, right: 5, left: -30, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis 
-                    dataKey="place" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false} 
+                  <XAxis
+                    dataKey="place"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                  <YAxis 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false} 
+                  <YAxis
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
                     allowDecimals={false}
                   />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
+                  <Tooltip
+                    cursor={{ fill: 'transparent' }}
+                    content={({ active, payload }) =>
+                    {
+                      if (active && payload && payload.length)
+                      {
                         return (
                           <div className="bg-popover text-popover-foreground p-1 text-[10px] rounded shadow-sm border">
                             {payload[0].value} games
@@ -237,10 +240,12 @@ export function PlayerGameStatsDetails({ entry }: { entry: PlayerStatsEntry })
                     }}
                   />
                   <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                    {data.map((entry, index) => {
-                       const t = playersCount <= 1 ? 1 : 1 - (index / (playersCount - 1));
-                       const hue = t * 120;
-                       return <Cell key={`cell-${index}`} fill={`hsl(${hue}, 70%, 50%)`} />;
+                    {data.map((entry, index) =>
+                    {
+                      void entry;
+                      const t = playersCount <= 1 ? 1 : 1 - (index / (playersCount - 1));
+                      const hue = t * 120;
+                      return <Cell key={`cell-${index}`} fill={`hsl(${hue}, 70%, 50%)`} />;
                     })}
                   </Bar>
                 </BarChart>
@@ -253,7 +258,8 @@ export function PlayerGameStatsDetails({ entry }: { entry: PlayerStatsEntry })
   );
 }
 
-function getOrdinal(n: number) {
+function getOrdinal(n: number)
+{
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return s[(v - 20) % 10] || s[v] || s[0];

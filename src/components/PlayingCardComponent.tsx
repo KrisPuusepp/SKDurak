@@ -133,7 +133,7 @@ const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"
 
 export function PlayingCardComponent({ card, onClick, className, style }: PlayingCardComponentProps)
 {
-  let { settings, setSettings } = useContext(SettingsContext)!;
+  let { settings } = useContext(SettingsContext)!;
 
   const hidden = card.rank === undefined || card.suit === undefined || card.rank === null || card.suit === null;
 

@@ -83,7 +83,7 @@ const SETTING_OPTIONS = {
     {
       value: "classic", label: <div className="flex items-center gap-2">
         <p>Classic</p>
-        {Object.entries(svgSuitIcons).map(([name, svg]) => (
+        {Object.entries(svgSuitIcons).map(([, svg]) => (
           <div className="flex items-center gap-2 fill-transparent">
             {svg}
           </div>
@@ -93,7 +93,7 @@ const SETTING_OPTIONS = {
     {
       value: "lucide", label: <div className="flex items-center gap-2">
         <p>Lucide</p>
-        {Object.entries(lucideSuitIcons).map(([name, Icon]) => (
+        {Object.entries(lucideSuitIcons).map(([, Icon]) => (
           <div className="flex items-center gap-2 fill-transparent">
             <Icon className="w-4 h-4" />
           </div>

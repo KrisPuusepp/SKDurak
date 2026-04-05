@@ -197,6 +197,16 @@ export default function App()
       rejoinPlayer(savedId);
     });
 
+    socket.on("disconnect", (reason) =>
+    {
+      console.log("Disconnected:", reason);
+      // Only reload if the disconnection was not intentional
+      if (reason !== "io client disconnect")
+      {
+        window.location.reload();
+      }
+    });
+
     socket.on("gameState", (state: GameState) =>
     {
       setGame(state);

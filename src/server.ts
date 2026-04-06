@@ -105,6 +105,7 @@ function broadcastGameState()
 
 function startGame()
 {
+  log("Game starting with players:", game.players.map(p => p.name).join(", "));
   moves = [];
   for (const player of game.players)
   {
@@ -123,11 +124,6 @@ function startGame()
   game.deck = createDeck();
 
   game.trumpSuit = game.deck[0].suit!;
-
-  // UI test code
-  //game.players[0].hand = game.deck.slice(0, 1);
-  //game.players[1].hand = game.deck.slice(1, 36);
-  //game.deck = [];
 
   // Deal 6 cards to each player
   for (let i = 0; i < 6; i++)
@@ -241,6 +237,7 @@ function checkForWinners()
 
 async function saveGame()
 {
+  log("Game ended. Winner order:", game.winnerOrder.map(id => game.players.find(p => p.id === id)?.name).join(", "));
   await saveGameRecord({
     trumpSuit: game.trumpSuit,
     turnOrder: game.players.map(p => p.name),
@@ -259,7 +256,7 @@ async function saveGame()
 
 io.on("connection", (socket) =>
 {
-  console.log("Client connected:", socket.id);
+  log("Client connected:", socket.id);
   socket.emit("gameState", buildStateForSocket(socket.id));
 
   // ---- Create & Join ----
@@ -320,6 +317,8 @@ io.on("connection", (socket) =>
     game.players.push(player);
     socketToPlayer.set(socket.id, player.id);
 
+    log(`Player ${player.name} joined the game`);
+
     callback({ success: true, playerId: player.id });
 
     broadcastGameState();
@@ -352,6 +351,8 @@ io.on("connection", (socket) =>
 
     player.connectionStatus = "connected";
     socketToPlayer.set(socket.id, player.id);
+
+    log(`Player ${player.name} rejoined the game`);
 
     callback({ success: true, player: player });
 
@@ -402,8 +403,6 @@ io.on("connection", (socket) =>
 
     // add ready dynamically
     player.ready = !player.ready;
-
-    console.log("Player " + player.name + " is " + (player.ready ? "ready" : "not ready"));
 
     const allReady =
       game.players.length > 1 &&
@@ -470,8 +469,6 @@ io.on("connection", (socket) =>
           // Attacks continue
           game.phase = "attacking";
         }
-
-        console.log("Player " + player.name + " defends");
       }
     } else if (game.attackerQueue.length > 0 && game.attackerQueue[0] === playerIndex)
     {
@@ -497,8 +494,6 @@ io.on("connection", (socket) =>
 
       // Next phase
       game.phase = "defending";
-
-      console.log("Player " + player.name + " attacks");
     }
 
     checkForWinners();
@@ -597,8 +592,14 @@ io.on("connection", (socket) =>
       return;
     }
 
+    const player = game.players.find(p => p.id === playerId);
     game.players = game.players.filter((p) => p.id !== playerId);
     socketToPlayer.delete(socket.id);
+
+    if (player)
+    {
+      log(`Player ${player.name} left the game`);
+    }
 
     callback({ success: true });
 
@@ -640,7 +641,7 @@ io.on("connection", (socket) =>
   // ---- Disconnect ----
   socket.on("disconnect", () =>
   {
-    console.log("Client disconnected:", socket.id);
+    log("Client disconnected:", socket.id);
 
     const playerId = socketToPlayer.get(socket.id);
     if (!playerId) return;
@@ -650,6 +651,7 @@ io.on("connection", (socket) =>
     {
       player.connectionStatus = "disconnected";
       player.ready = false;
+      log(`Player ${player.name} disconnected`);
     }
 
     socketToPlayer.delete(socket.id);
@@ -657,7 +659,13 @@ io.on("connection", (socket) =>
   });
 });
 
+function log(...args: any[])
+{
+  const timestamp = new Date().toLocaleString();
+  console.log(`[${timestamp}]`, ...args);
+}
+
 httpServer.listen(3000, () =>
 {
-  console.log("Server running on http://localhost:3000");
+  log("Server running on http://localhost:3000");
 });

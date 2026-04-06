@@ -10,6 +10,7 @@ interface PlayingCardComponentProps
   onClick?: () => void;
   className?: string;
   style?: React.CSSProperties;
+  isTrump?: boolean;
 }
 
 export const lucideSuitIcons: { [key: string]: any } = {
@@ -131,7 +132,7 @@ export const CardColors: Record<string, ThemeConfig> = {
 
 const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
-export function PlayingCardComponent({ card, onClick, className, style }: PlayingCardComponentProps)
+export function PlayingCardComponent({ card, onClick, className, style, isTrump }: PlayingCardComponentProps)
 {
   let { settings } = useContext(SettingsContext)!;
 
@@ -231,18 +232,20 @@ export function PlayingCardComponent({ card, onClick, className, style }: Playin
             {/* Suits and Ranks */}
             <div className="relative w-full h-full" style={{ transform: "translateZ(20px)" }}>
               <div className={`absolute top-0 left-0 flex flex-col items-center ${colors.accent}`}>
-                {settings.SKMode && card.rank && card.rank == 12 ? (
-                  <img src="./SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
-                ) : (
-                  <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
-                )}
+                <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
                 {card.suit &&
                   (
                     <div className={`w-[2vmin] h-[2vmin] mt-[0.5vmin] ${colors.accent} ${settings.suitFill === "filled" ? "fill-current [&_svg]:stroke-4" : "fill-transparent"}`}>
-                      {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
-                      {settings.suitShape === "classic" && <div className="w-full h-full">
-                        {svgSuitIcons[card.suit]}
-                      </div>}
+                      {settings.SKMode && isTrump ? (
+                        <img src="./SK_logo.png" className="w-full h-full object-contain" />
+                      ) : (
+                        <>
+                          {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
+                          {settings.suitShape === "classic" && <div className="w-full h-full">
+                            {svgSuitIcons[card.suit]}
+                          </div>}
+                        </>
+                      )}
                     </div>
                   )
                 }
@@ -252,28 +255,36 @@ export function PlayingCardComponent({ card, onClick, className, style }: Playin
                 {card.suit &&
                   (
                     <div className={`w-[6vmin] h-[6vmin] ${colors.accent} ${settings.suitFill === "filled" ? "fill-current [&_svg]:stroke-4" : "fill-transparent"} ${settings.cardGlow ? "filter drop-shadow-[0_0_1.5vmin_currentColor]" : ""}`}>
-                      {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
-                      {settings.suitShape === "classic" && <div className="w-full h-full">
-                        {svgSuitIcons[card.suit]}
-                      </div>}
+                      {settings.SKMode && isTrump ? (
+                        <img src="./SK_logo.png" className="w-full h-full object-contain" />
+                      ) : (
+                        <>
+                          {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
+                          {settings.suitShape === "classic" && <div className="w-full h-full">
+                            {svgSuitIcons[card.suit]}
+                          </div>}
+                        </>
+                      )}
                     </div>
                   )
                 }
               </div>
 
               <div className={`absolute bottom-0 right-0 flex flex-col items-center transform rotate-180 ${colors.accent}`}>
-                {settings.SKMode && card.rank && card.rank == 12 ? (
-                  <img src="./SK_logo.png" className="w-[4.5vmin] h-[4.5vmin] mt-[0.5vmin]" />
-                ) : (
-                  <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
-                )}
+                <span className="text-[3vmin] font-bold leading-none">{displayRank}</span>
                 {card.suit &&
                   (
                     <div className={`w-[2vmin] h-[2vmin] mt-[0.5vmin] ${colors.accent} ${settings.suitFill === "filled" ? "fill-current [&_svg]:stroke-4" : "fill-transparent"}`}>
-                      {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
-                      {settings.suitShape === "classic" && <div className="w-full h-full">
-                        {svgSuitIcons[card.suit]}
-                      </div>}
+                      {settings.SKMode && isTrump ? (
+                        <img src="./SK_logo.png" className="w-full h-full object-contain" />
+                      ) : (
+                        <>
+                          {settings.suitShape === "lucide" && <LucideSuitSVG className="w-full h-full fill-inherit" />}
+                          {settings.suitShape === "classic" && <div className="w-full h-full">
+                            {svgSuitIcons[card.suit]}
+                          </div>}
+                        </>
+                      )}
                     </div>
                   )
                 }

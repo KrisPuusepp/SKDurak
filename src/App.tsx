@@ -763,6 +763,7 @@ function Center({
                   <PlayingCardComponent
                     key={card.id}
                     card={card}
+                    isTrump={card.suit === game.trumpSuit}
                     // Only the first card gets the 90-degree rotation
                     className={isFirst ? "" : "-rotate-90 top-[10.5vmin] -rotate-90 -left-[0.5vmin]"}
                   />
@@ -795,6 +796,7 @@ function Center({
                   <PlayingCardComponent
                     key={card.id}
                     card={card}
+                    isTrump={card.suit === game.trumpSuit}
                   />
                 </div>
               );
@@ -814,12 +816,14 @@ function Center({
             <PlayingCardComponent
               key={pair.attackCard.id}
               card={pair.attackCard}
+              isTrump={pair.attackCard.suit === game.trumpSuit}
             />
             {pair.defenseCard ? (
               <div className="absolute top-[7.4vmin] z-10">
                 <PlayingCardComponent
                   key={pair.defenseCard.id}
                   card={pair.defenseCard}
+                  isTrump={pair.defenseCard.suit === game.trumpSuit}
                 />
               </div>
             ) : (game.phase === "defending" && game.players.findIndex((p) => p.id === myPlayerId) === game.defenderIndex ? (
@@ -969,7 +973,7 @@ function PlayerSeat({
                         }}
                       >
                         <div className={`w-[15vmin]`}>
-                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
+                          <PlayingCardComponent key={card.id} card={card} isTrump={card.suit === game.trumpSuit} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
                         </div>
                       </div>
                     ))}
@@ -1007,7 +1011,7 @@ function PlayerSeat({
                         }}
                       >
                         <div className={`w-[15vmin]`}>
-                          <PlayingCardComponent key={card.id} card={card} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
+                          <PlayingCardComponent key={card.id} card={card} isTrump={card.suit === game.trumpSuit} onClick={(game.phase == "attacking" && game.attackerQueue[0] === player.index && validAttackCard(card, game)) || (toDefend && canBeat(card, toDefend, game.trumpSuit)) ? () => playCard(card) : undefined} />
                         </div>
                       </div>
                     ))}
@@ -1034,6 +1038,7 @@ function PlayerSeat({
                   <PlayingCardComponent
                     key={card.id}
                     card={card}
+                    isTrump={card.suit === game.trumpSuit}
                   />
                 </div>
               )

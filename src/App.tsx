@@ -78,6 +78,9 @@ const SETTING_OPTIONS = {
     { value: "dark", label: "Dark" },
     { value: "classic", label: "Classic" },
     { value: "purple", label: "Purple" },
+    { value: "gold", label: "Gold" },
+    { value: "emerald", label: "Emerald" },
+    { value: "midnight", label: "Midnight" },
   ],
   suitShape: [
     {

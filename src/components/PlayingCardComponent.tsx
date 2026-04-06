@@ -119,13 +119,55 @@ export const CardColors: Record<string, ThemeConfig> = {
       accent: "text-purple-500",
       border: "border-purple-400/30",
       glow: "shadow-[0_0_2vmin_rgba(0,0,,0.1)]",
-      bg: "bg-indigo-950/90",
+      bg: "bg-mauve-950/90",
     },
     black: {
       accent: "text-gray-200",
       border: "border-gray-700/50",
       glow: "shadow-[0_0_2vmin_rgba(0,0,0,0.1)]",
-      bg: "bg-gray-950/90",
+      bg: "bg-mauve-950/90",
+    },
+  },
+  gold: {
+    red: {
+      accent: "text-amber-500",
+      border: "border-amber-400/40",
+      glow: "shadow-[0_0_3vmin_rgba(245,158,11,0.3)]",
+      bg: "bg-black",
+    },
+    black: {
+      accent: "text-amber-200",
+      border: "border-amber-100/30",
+      glow: "shadow-[0_0_3vmin_rgba(252,211,77,0.2)]",
+      bg: "bg-black",
+    },
+  },
+  emerald: {
+    red: {
+      accent: "text-emerald-500",
+      border: "border-emerald-400/30",
+      glow: "shadow-[0_0_3vmin_rgba(16,185,129,0.2)]",
+      bg: "bg-mist-950",
+    },
+    black: {
+      accent: "text-teal-200",
+      border: "border-teal-300/30",
+      glow: "shadow-[0_0_3vmin_rgba(20,184,166,0.15)]",
+      bg: "bg-mist-950",
+    },
+  },
+  midnight: {
+    red: {
+      accent: "text-rose-500",
+      border: "border-rose-500/30",
+      glow: "shadow-[0_0_3vmin_rgba(244,63,94,0.2)]",
+      bg: "bg-slate-950",
+    },
+    black: {
+      accent: "text-sky-400",
+      border: "border-sky-400/30",
+      glow: "shadow-[0_0_3vmin_rgba(56,189,248,0.2)]",
+      bg: "bg-slate-950",
     },
   },
 };

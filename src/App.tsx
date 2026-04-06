@@ -55,8 +55,8 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 export interface UserSettings
 {
-  backgroundTheme: "dark" | "light";
-  cardTheme: "dark" | "classic";
+  backgroundTheme: "dark" | "light" | "emerald" | "midnight" | "sunset";
+  cardTheme: "dark" | "classic" | "purple" | "gold" | "emerald" | "midnight";
   suitShape: "lucide" | "classic";
   suitFill: "hollow" | "filled";
   cardGlow: boolean;
@@ -73,6 +73,9 @@ const SETTING_OPTIONS = {
   backgroundTheme: [
     { value: "dark", label: <div className="flex items-center gap-2"> Dark</div> },
     { value: "light", label: <div className="flex items-center gap-2"> Light</div> },
+    { value: "emerald", label: <div className="flex items-center gap-2"> Emerald</div> },
+    { value: "midnight", label: <div className="flex items-center gap-2"> Midnight</div> },
+    { value: "sunset", label: <div className="flex items-center gap-2"> Sunset</div> },
   ],
   cardTheme: [
     { value: "dark", label: "Dark" },
@@ -179,7 +182,7 @@ export default function App()
     const root = window.document.documentElement;
 
     // Remove existing theme classes
-    root.classList.remove("light", "dark");
+    root.classList.remove("light", "dark", "emerald", "midnight", "sunset");
 
     // Add the current theme class
     root.classList.add(settings.backgroundTheme);
@@ -339,7 +342,7 @@ export default function App()
   if (!game)
   {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-neutral-900 text-white">
+      <div className="h-screen w-screen flex items-center justify-center bg-background text-foreground">
         Connecting...
       </div>
     );
@@ -430,12 +433,12 @@ export default function App()
           <div className="relative w-[90vmin] h-[90vmin] flex items-center justify-center">
 
             {/* Bottom Layer (Shadow/Reflection) */}
-            <div className="absolute w-full h-full rounded-full perspective-near rotate-x-320 bg-[#eeeeee] dark:bg-[#151515] border-[0.35vmin] border-[#cccccc] dark:border-[#333333] translate-y-[3vmin]">
+            <div className="absolute w-full h-full rounded-full perspective-near rotate-x-320 bg-table-reflection-bg border-[0.35vmin] border-table-reflection translate-y-[3vmin]">
               {/* This copy is shifted down (translate-y-8) and made transparent (bg-white/5) */}
             </div>
 
             {/* Top Layer (Main Table Surface) */}
-            <div className="relative w-full h-full rounded-full perspective-near rotate-x-320 bg-[#eeeeee] dark:bg-[#111111] shadow-2xl shadow-[#22222255] inset-shadow-sm inset-shadow-[#888888] border-[0.35vmin] border-[#999999] dark:border-[#333333]">
+            <div className="relative w-full h-full rounded-full perspective-near rotate-x-320 bg-table-surface shadow-2xl shadow-[#22222255] inset-shadow-sm inset-shadow-white/20 dark:inset-shadow-[#888888] border-[0.35vmin] border-table-edge">
               {/* Main Surface */}
             </div>
 
@@ -946,7 +949,7 @@ function PlayerSeat({
         <p className={`text-shadow-lg absolute -top-[3.75vmin] text-[2.5vmin] text-muted-foreground opacity-75`}>
           {player.alias != "" ? player.name : ""}
         </p>
-        <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-card-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
+        <p className={`bg-card p-[1vmin] rounded-[2vmin] border-[0.2vmin] border-border text-shadow-lg ${player.ready ? "text-green-500" : ""} ${game.phase !== "waiting" && game.defenderIndex == player.index ? "text-blue-500" : ""} ${game.phase !== "waiting" && game.attackerQueue[0] == player.index ? "text-red-500" : ""} ${(trumpRows.length > 2 || nonTrumpRows.length > 2) ? "translate-y-[-10vmin]" : ""} ${player.connectionStatus == "disconnected" ? "bg-muted text-muted-foreground italic line-through" : ""}`}>
           {player.alias == "" ? player.name : player.alias} {" "} {player.hand.length > 0 && "(" + player.hand.length + ")"}
         </p>
         {game.winnerOrder.indexOf(player.id) >= 0 && (

@@ -1,6 +1,7 @@
 // Durak.ts
 
 import { generateUUID, shuffle } from "./lib/utils";
+import { currentGameMode } from "./DurakSettings";
 
 // ---------- Basic Types ----------
 
@@ -80,17 +81,17 @@ export interface GameState
 
 // ---------- Deck Creation ----------
 
-// Create a standard 36-card shuffled deck
+// Create a shuffled deck for the current game mode
 export function createDeck(): PlayingCard[]
 {
   const suits: Suit[] = ["hearts", "diamonds", "clubs", "spades"];
+  const firstRank = currentGameMode === "extended" ? 0 : 4;
 
   const deck: PlayingCard[] = [];
 
   for (const suit of suits)
   {
-    // 0–8 = 6 through Ace (36-card deck)
-    for (let rank = 4 as Rank; rank <= 12; rank++)
+    for (let rank = firstRank as Rank; rank <= 12; rank++)
     {
       deck.push({
         id: `card-${generateUUID()}`,

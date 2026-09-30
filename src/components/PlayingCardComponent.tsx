@@ -182,7 +182,7 @@ export function PlayingCardComponent({ card, onClick, className, style, isTrump 
 
   const LucideSuitSVG = (card.suit && lucideSuitIcons[card.suit]) || null;
   const isRedSuit = card.suit === "hearts" || card.suit === "diamonds";
-  const displayRank = (card.rank && RANK_LABELS[card.rank]) || "?";
+  const displayRank = card.rank !== null && card.rank !== undefined ? RANK_LABELS[card.rank] : "?";
 
   // Fallback to 'dark' if a theme is missing
   const activeTheme = CardColors[settings.cardTheme] || CardColors.dark;
